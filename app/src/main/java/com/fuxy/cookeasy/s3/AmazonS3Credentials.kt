@@ -12,6 +12,8 @@ class AmazonS3Credentials private constructor(context: Context) {
     val awsRegion: String
     val accessKeyId: String
     val secretAccessKey: String
+    val bucketName: String
+    val endPointUrl: String
 
     init {
         val inputStream = context.resources.openRawResource(R.raw.s3_credentials)
@@ -21,6 +23,8 @@ class AmazonS3Credentials private constructor(context: Context) {
         awsRegion = s3CredentialsObject.get("aws_region").asString
         accessKeyId = s3CredentialsObject.get("access_key_id").asString
         secretAccessKey = s3CredentialsObject.get("secret_access_key").asString
+        bucketName = s3CredentialsObject.get("bucket_name").asString
+        endPointUrl = s3CredentialsObject.get("endpoint_url").asString
     }
 
     companion object : SingletonHolder<AmazonS3Credentials, Context>(::AmazonS3Credentials)
