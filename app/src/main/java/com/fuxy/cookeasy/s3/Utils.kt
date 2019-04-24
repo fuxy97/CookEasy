@@ -1,6 +1,7 @@
 package com.fuxy.cookeasy.s3
 
 import android.content.Context
+import android.util.Log
 import java.security.MessageDigest
 import java.text.SimpleDateFormat
 import java.util.*
@@ -78,10 +79,10 @@ fun formCanonicalRequest(
 
 fun formStringToSign(context: Context, canonicalRequest: String, time: Date): String {
     val iso8601DateFormat = SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'", Locale.GERMANY)
-    iso8601DateFormat.timeZone = TimeZone.getTimeZone("Europe/Berlin")
+    iso8601DateFormat.timeZone = TimeZone.getTimeZone("UTC")
 
     val simpleDateFormat = SimpleDateFormat("yyyyMMdd", Locale.GERMANY)
-    simpleDateFormat.timeZone = TimeZone.getTimeZone("Europe/Berlin")
+    simpleDateFormat.timeZone = TimeZone.getTimeZone("UTC")
 
     val md = MessageDigest.getInstance("SHA-256")
     val digest = md.digest(canonicalRequest.toByteArray())
@@ -97,7 +98,7 @@ fun formStringToSign(context: Context, canonicalRequest: String, time: Date): St
 
 fun sign(context: Context, time: Date, stringToSign: String): String {
     val simpleDateFormat = SimpleDateFormat("yyyyMMdd", Locale.GERMANY)
-    simpleDateFormat.timeZone = TimeZone.getTimeZone("Europe/Berlin")
+    simpleDateFormat.timeZone = TimeZone.getTimeZone("UTC")
 
     val hmac = Mac.getInstance("HmacSHA256")
     hmac.init(SecretKeySpec(
@@ -121,7 +122,7 @@ fun sign(context: Context, time: Date, stringToSign: String): String {
 
 fun formAuthorizationHeaderValue(context: Context, time: Date, headerNames: List<String>, signature: String): String {
     val simpleDateFormat = SimpleDateFormat("yyyyMMdd", Locale.GERMANY)
-    simpleDateFormat.timeZone = TimeZone.getTimeZone("Europe/Berlin")
+    simpleDateFormat.timeZone = TimeZone.getTimeZone("UTC")
 
     val sb = StringBuilder()
     val newHeaderNames = headerNames.plus("x-amz-content-sha256")
@@ -152,13 +153,9 @@ fun calculateAuthenticationCode(
     headers: Map<String, String>,
     payload: ByteArray? = null
 ): String {
+    val calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+
     val canonicalRequest = formCanonicalRequest(httpMethod, uri, queryParameters, headers, payload)
-
-    val calendar = GregorianCalendar.getInstance(TimeZone.getTimeZone("Europe/Berlin"), Locale.GERMANY)
-    calendar.set(Calendar.HOUR_OF_DAY, 0)
-    calendar.set(Calendar.MINUTE, 0)
-    calendar.set(Calendar.SECOND, 0)
-
     val stringToSign = formStringToSign(context, canonicalRequest, calendar.time)
     val signature = sign(context, calendar.time, stringToSign)
 
