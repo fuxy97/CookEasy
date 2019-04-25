@@ -7,9 +7,11 @@ import com.fuxy.cookeasy.s3.getImageObjectFromBucket
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import org.threeten.bp.LocalTime
+import org.threeten.bp.format.DateTimeFormatter
+
 
 object BucketImageObjectConverter {
-
     @TypeConverter
     @JvmStatic
     fun fromBucketImageObject(value: BucketImageObject): String {
@@ -20,5 +22,21 @@ object BucketImageObjectConverter {
     @JvmStatic
     fun toBucketImageObject(value: String): BucketImageObject = runBlocking {
         return@runBlocking withContext(Dispatchers.Default) { getImageObjectFromBucket(AppDatabase.context, value) }
+    }
+}
+
+object LocalTimeConverter {
+    val dtf = DateTimeFormatter.ofPattern("HH:mm")
+
+    @TypeConverter
+    @JvmStatic
+    fun fromLocalTime(value: LocalTime): String {
+        return value.format(dtf)
+    }
+
+    @TypeConverter
+    @JvmStatic
+    fun toLocalTime(value: String): LocalTime {
+        return LocalTime.parse(value, dtf)
     }
 }
