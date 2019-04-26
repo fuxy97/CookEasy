@@ -4,7 +4,10 @@ import android.annotation.SuppressLint
 import android.content.Context
 import androidx.room.*
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.fuxy.cookeasy.entity.Ingredient
 import com.fuxy.cookeasy.entity.Recipe
+import com.fuxy.cookeasy.entity.RecipeIngredient
+import com.fuxy.cookeasy.entity.Step
 import com.fuxy.cookeasy.s3.getImageObjectFromBucket
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.GlobalScope
@@ -13,7 +16,8 @@ import kotlinx.coroutines.withContext
 import org.threeten.bp.LocalTime
 
 @TypeConverters(BucketImageObjectConverter::class, LocalTimeConverter::class)
-@Database(entities = [Recipe::class], version = 1)
+@Database(entities = [Recipe::class, Ingredient::class, RecipeIngredient::class, Step::class,
+    com.fuxy.cookeasy.entity.Unit::class], version = 1)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun recipeDao(): RecipeDao
     abstract fun stepDao(): StepDao
@@ -48,17 +52,60 @@ abstract class AppDatabase : RoomDatabase() {
 
                         GlobalScope.launch {
                             withContext(IO) {
-                                getInstance(context)!!.recipeDao()
+                                val recipeIds = getInstance(context)!!.recipeDao()
                                     .insert(
                                         Recipe(
                                             dish = "Салат \"На скорую руку\"",
                                             cookingTime = LocalTime.of(0, 10),
-                                            bucketImage = getImageObjectFromBucket(context, "salat-na-skoruyu-ruku.jpg")
+                                            bucketImage = getImageObjectFromBucket(context, "salat-na-skoruyu-ruku.jpg"),
+                                            description = "Название говорит само за себя. Очень вкусный салат и готовится очень быстро. Можно приготивать к любому столу."
                                         ), Recipe(
                                             dish = "Салат \"Маскарад\"",
                                             cookingTime = LocalTime.of(0,25),
-                                            bucketImage = getImageObjectFromBucket(context, "salat-maskarad.jpg")
+                                            bucketImage = getImageObjectFromBucket(context, "salat-maskarad.jpg"),
+                                            description = "Самый праздничный салат для праздничного стола. Салат \"Маскарад\" не останется без внимания ваших гостей и станет ярким гостем на вашем праздничном столе."
                                         ))
+
+                                val unitIds = getInstance(context)!!.unitDao()
+                                    .insert(com.fuxy.cookeasy.entity.Unit(unit = "г."),
+                                        com.fuxy.cookeasy.entity.Unit(unit = "ст. л."))
+
+                                val ingredientIds = getInstance(context)!!.ingredientDao()
+                                    .insert(Ingredient(ingredient = "ветчина"),
+                                        Ingredient(ingredient = "крабовые палочки"),
+                                        Ingredient(ingredient = "помидоры")
+                                    )
+
+                                getInstance(context)!!.recipeIngredientDao()
+                                    .insert(RecipeIngredient(
+                                        recipeId = recipeIds[0].toInt(),
+                                        ingredientId = ingredientIds[0].toInt(),
+                                        ingredientCount = 200,
+                                        unitId = unitIds[0].toInt()
+                                    ), RecipeIngredient(
+                                        recipeId = recipeIds[0].toInt(),
+                                        ingredientId = ingredientIds[1].toInt(),
+                                        ingredientCount = 100,
+                                        unitId = unitIds[0].toInt()
+                                    ), RecipeIngredient(
+                                        recipeId = recipeIds[0].toInt(),
+                                        ingredientId = ingredientIds[2].toInt(),
+                                        ingredientCount = 2,
+                                        unitId = unitIds[1].toInt()
+                                    ))
+
+                                getInstance(context)!!.stepDao()
+                                    .insert(Step(
+                                        recipeId = recipeIds[0].toInt(),
+                                        stepNumber = 1,
+                                        description = "Ветчину нарезать соломкой и сложить в миску.",
+                                        stepBucketImage = getImageObjectFromBucket(context, "20151130-salat-maskarad-01.jpg")
+                                    ), Step(
+                                        recipeId = recipeIds[0].toInt(),
+                                        stepNumber = 2,
+                                        description = "Добавить зеленый горошек и нарезанные помидоры.",
+                                        stepBucketImage = getImageObjectFromBucket(context, "20151130-salat-maskarad-02.jpg")
+                                    ))
                             }
                         }
                     }

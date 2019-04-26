@@ -13,6 +13,9 @@ interface RecipeDao {
     @Query("SELECT * FROM recipe LIMIT :pageSize OFFSET :offset")
     fun getPage(offset: Int, pageSize: Int): List<Recipe>
 
+    @Query("SELECT * FROM recipe WHERE id = :id")
+    fun getById(id: Int): Recipe
+
     @Insert
-    fun insert(vararg recipe: Recipe)
+    fun insert(vararg recipe: Recipe): List<Long>
 }

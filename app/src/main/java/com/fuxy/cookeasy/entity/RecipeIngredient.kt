@@ -17,7 +17,7 @@ import androidx.room.PrimaryKey
         childColumns = ["unit_id"],
         onDelete = SET_NULL)])
 data class RecipeIngredient(
-    @PrimaryKey val id: Int? = null,
+    @PrimaryKey(autoGenerate = true) val id: Int? = null,
     @ColumnInfo(name = "recipe_id") val recipeId: Int,
     @ColumnInfo(name = "ingredient_id") val ingredientId: Int,
     @ColumnInfo(name = "ingredient_count") val ingredientCount: Int,
