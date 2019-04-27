@@ -2,66 +2,81 @@ package com.fuxy.cookeasy
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.view.View
-import android.widget.ProgressBar
-import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.fuxy.cookeasy.adapter.RecipeAdapter
-import com.fuxy.cookeasy.db.AppDatabase
-import com.fuxy.cookeasy.entity.Recipe
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import android.view.MenuItem
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
+import androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
+import com.fuxy.cookeasy.fragment.AddRecipeFragment
+import com.fuxy.cookeasy.fragment.RecipesFragment
+import com.fuxy.cookeasy.fragment.SettingsFragment
+import com.google.android.material.bottomnavigation.BottomNavigationView
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemSelectedListener {
 
-    private var recipeRecyclerView: RecyclerView? = null
-    private var progressBar: ProgressBar? = null
+    private var bottomNavigationView: BottomNavigationView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        recipeRecyclerView = findViewById(R.id.rv_recipe)
-        progressBar = findViewById(R.id.pb_recipe_is_loaded)
-        val layoutManager = GridLayoutManager(this, 2)
-        recipeRecyclerView?.layoutManager = layoutManager
+        bottomNavigationView = findViewById(R.id.bnv_navigation)
+        bottomNavigationView?.setOnNavigationItemSelectedListener(this)
 
-        var adapter: RecipeAdapter? = null
-        var recipes: MutableList<Recipe>? = null
+        supportFragmentManager
+            .beginTransaction()
+            .replace(R.id.fl_fragment_container, RecipesFragment())
+            .commit()
+    }
 
-        GlobalScope.launch {
-            withContext(Dispatchers.IO) {
-                val recipeDao = AppDatabase.getInstance(applicationContext)!!.recipeDao()
-                recipes = recipeDao.getPage(0, 10).toMutableList()
+    private fun loadFragment(fragment: Fragment?, name: String?): Boolean {
+        if (fragment != null) {
+            val transaction = supportFragmentManager
+                .beginTransaction()
+                .replace(R.id.fl_fragment_container, fragment)
 
-                launch(Dispatchers.Main) {
-                    adapter = RecipeAdapter(recipes!!)
-                    recipeRecyclerView?.adapter = adapter
+            val count = supportFragmentManager.backStackEntryCount
+
+            if (name != RecipesFragment.FRAGMENT_NAME) {
+                transaction.addToBackStack(name)
+            }
+
+            transaction.commit()
+
+            supportFragmentManager.addOnBackStackChangedListener(object : FragmentManager.OnBackStackChangedListener {
+                override fun onBackStackChanged() {
+                    if (supportFragmentManager.backStackEntryCount <= count) {
+                        supportFragmentManager.popBackStack(name, POP_BACK_STACK_INCLUSIVE)
+                        supportFragmentManager.removeOnBackStackChangedListener(this)
+                        bottomNavigationView?.menu?.getItem(0)?.isChecked = true
+                    }
                 }
+            })
+
+            return true
+        }
+        return false
+    }
+
+    override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        var fragment: Fragment? = null
+        var name: String? = null
+
+        when(item.itemId) {
+            R.id.navigation_recipes -> {
+                fragment = RecipesFragment()
+                name = RecipesFragment.FRAGMENT_NAME
+            }
+            R.id.navigation_add_recipe -> {
+                fragment = AddRecipeFragment()
+                name = AddRecipeFragment.FRAGMENT_NAME
+            }
+            R.id.navigation_settings -> {
+                fragment = SettingsFragment()
+                name = SettingsFragment.FRAGMENT_NAME
+
             }
         }
 
-        recipeRecyclerView?.addOnScrollListener(object : EndlessRecyclerViewScrollListener(layoutManager) {
-            override fun fetchData(nextItem: Int) {
-                progressBar?.visibility = View.VISIBLE
-
-                GlobalScope.launch {
-                    withContext(Dispatchers.IO) {
-                        val recipeDao = AppDatabase.getInstance(applicationContext)!!.recipeDao()
-                        recipes?.addAll(recipeDao.getPage(nextItem, 10))
-
-                        launch(Dispatchers.Main) {
-                            adapter?.notifyItemInserted(nextItem)
-                            progressBar?.visibility = View.GONE
-                        }
-                    }
-                }
-            }
-
-        })
-
-
+        return loadFragment(fragment, name)
     }
 }
