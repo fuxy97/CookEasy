@@ -7,4 +7,8 @@ import androidx.room.PrimaryKey
 data class Ingredient(
     @PrimaryKey(autoGenerate = true) val id: Int? = null,
     val ingredient: String
-)
+) {
+    override fun toString(): String {
+        return ingredient
+    }
+}

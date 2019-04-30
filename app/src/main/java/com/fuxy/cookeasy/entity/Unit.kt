@@ -7,4 +7,8 @@ import androidx.room.PrimaryKey
 data class Unit(
     @PrimaryKey(autoGenerate = true) val id: Int? = null,
     val unit: String
-)
+) {
+    override fun toString(): String {
+        return unit
+    }
+}

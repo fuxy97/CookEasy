@@ -3,4 +3,27 @@
     <string name="recipes">Рецепты</string>
     <string name="add_recipe">Добавить рецепт</string>
     <string name="settings">Настройки</string>
+    <string name="search_hint">Введите название блюда…</string>
+    <string name="cooking_time">Время приготовления</string>
+    <string name="ingredients">Ингредиенты</string>
+    <string name="ingredient">Ингредиент</string>
+    <string name="count">Количество</string>
+    <string name="units">Единицы</string>
+    <string name="select_unit">Выберите единицу измерения</string>
+    <string name="select_ingredient">Выберите ингредиент</string>
+    <string name="ok">OK</string>
+    <string name="add_ingredient">Добавить ингредиент</string>
+    <string name="apply">Применить</string>
+    <string name="error">Ошибка</string>
+    <string name="filter_error">Необходимо заполнить все поля! Если Вы не заполнили поля в ингредиентах, то можно удалить эти ингредиенты.</string>
+    <string name="sort_by">Сортировать по</string>
+
+    <string-array name="sort_options">
+        <item>Названию блюда (возрастание)</item>
+        <item>Названию блюда (убывание)</item>
+        <item>Оценке (возрастание)</item>
+        <item>Оценке (убывание)</item>
+        <item>Времени приготовления (возрастание)</item>
+        <item>Времени приготовления (убывание)</item>
+    </string-array>
 </resources>
