@@ -3,11 +3,9 @@ package com.fuxy.cookeasy.adapter
 import android.content.Context
 import android.text.Editable
 import android.text.TextWatcher
-import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.inputmethod.EditorInfo
 import android.widget.*
 import androidx.recyclerview.widget.RecyclerView
 import com.fuxy.cookeasy.R
@@ -55,14 +53,14 @@ class IngredientFilterAdapter(private val context: Context, val ingredients: Mut
         val ingredient = ingredients[position]
 
         if (ingredient.unit != null) {
-            for (i in 0..unitAdapter?.count!!) {
+            for (i in 0 until unitAdapter?.count!!) {
                 if (unitAdapter?.getItem(i)?.id == ingredient.unit?.id)
                     holder.unitSearchableSpinner.setSelection(i)
             }
         }
 
         if (ingredient.ingredient != null) {
-            for (i in 0..ingredientAdapter?.count!!) {
+            for (i in 0 until ingredientAdapter?.count!!) {
                 if (ingredientAdapter?.getItem(i)?.id == ingredient.ingredient?.id)
                     holder.ingredientSearchableSpinner.setSelection(i)
             }

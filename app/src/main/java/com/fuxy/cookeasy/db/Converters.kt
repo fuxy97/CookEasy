@@ -14,19 +14,23 @@ import org.threeten.bp.format.DateTimeFormatter
 object BucketImageObjectConverter {
     @TypeConverter
     @JvmStatic
-    fun fromBucketImageObject(value: BucketImageObject): String {
-        return value.absolutePath
+    fun fromBucketImageObject(value: BucketImageObject?): String? {
+        return value?.absolutePath
     }
 
     @TypeConverter
     @JvmStatic
-    fun toBucketImageObject(value: String): BucketImageObject = runBlocking {
-        return@runBlocking withContext(Dispatchers.Default) { getImageObjectFromBucket(AppDatabase.context, value) }
+    fun toBucketImageObject(value: String?): BucketImageObject? = runBlocking {
+        if (value != null) {
+            return@runBlocking withContext(Dispatchers.Default) { getImageObjectFromBucket(AppDatabase.context, value) }
+        } else {
+            return@runBlocking null
+        }
     }
 }
 
 object LocalTimeConverter {
-    val dtf = DateTimeFormatter.ofPattern("HH:mm")
+    private val dtf = DateTimeFormatter.ofPattern("HH:mm")
 
     @TypeConverter
     @JvmStatic

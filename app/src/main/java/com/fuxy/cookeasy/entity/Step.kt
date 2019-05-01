@@ -12,5 +12,5 @@ data class Step(
     @ColumnInfo(name = "recipe_id") val recipeId: Int,
     @ColumnInfo(name = "step_number") val stepNumber: Int,
     val description: String,
-    @ColumnInfo(name = "step_bucket_image_absolute_path") val stepBucketImage: BucketImageObject
+    @ColumnInfo(name = "step_bucket_image_absolute_path") val stepBucketImage: BucketImageObject? = null
 )

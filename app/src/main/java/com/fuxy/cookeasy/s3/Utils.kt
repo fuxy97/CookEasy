@@ -151,13 +151,12 @@ fun calculateAuthenticationCode(
     uri: String,
     queryParameters: Map<String, String>? = null,
     headers: Map<String, String>,
+    time: Date,
     payload: ByteArray? = null
 ): String {
-    val calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-
     val canonicalRequest = formCanonicalRequest(httpMethod, uri, queryParameters, headers, payload)
-    val stringToSign = formStringToSign(context, canonicalRequest, calendar.time)
-    val signature = sign(context, calendar.time, stringToSign)
+    val stringToSign = formStringToSign(context, canonicalRequest, time)
+    val signature = sign(context, time, stringToSign)
 
-    return formAuthorizationHeaderValue(context, calendar.time, headers.keys.toList(), signature)
+    return formAuthorizationHeaderValue(context, time, headers.keys.toList(), signature)
 }

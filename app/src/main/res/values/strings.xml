@@ -17,6 +17,20 @@
     <string name="error">Ошибка</string>
     <string name="filter_error">Необходимо заполнить все поля! Если Вы не заполнили поля в ингредиентах, то можно удалить эти ингредиенты.</string>
     <string name="sort_by">Сортировать по</string>
+    <string name="dish_name">Название блюда</string>
+    <string name="upload_photo">Загрузить фото</string>
+    <string name="upload_note">* Желательно использовать фото альбомного формата</string>
+    <string name="change">Изменить</string>
+    <string name="dish_description">Описание блюда</string>
+    <string name="choose_time">Выберите время…</string>
+    <string name="choose_photo">Выберите фото</string>
+    <string name="steps">Шаги</string>
+    <string name="add_step">Добавить шаг</string>
+    <string name="remove_last_step">Удалить последний шаг</string>
+    <string name="description_hint">Опишите шаг</string>
+    <string name="delete">Удалить</string>
+    <string name="edit">Редактировать</string>
+    <string name="add">Добавить</string>
 
     <string-array name="sort_options">
         <item>Названию блюда (возрастание)</item>

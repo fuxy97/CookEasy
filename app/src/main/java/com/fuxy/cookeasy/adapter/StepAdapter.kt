@@ -24,8 +24,12 @@ class StepAdapter(private val steps: List<Step>) : RecyclerView.Adapter<StepAdap
 
         holder.stepNumberTextView?.text = item.stepNumber.toString()
         holder.stepTextView?.text = item.description
-        holder.stepTextView?.setCompoundDrawablesRelativeWithIntrinsicBounds(
-            null, null, null, BitmapDrawable(holder.itemView.resources, item.stepBucketImage.bitmap))
+
+        if (item.stepBucketImage != null) {
+            holder.stepTextView?.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                null, null, null, BitmapDrawable(holder.itemView.resources, item.stepBucketImage.bitmap)
+            )
+        }
     }
 
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {

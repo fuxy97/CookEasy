@@ -14,14 +14,14 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.sqlite.db.SimpleSQLiteQuery
-import com.fuxy.cookeasy.EndlessRecyclerViewScrollListener
-import com.fuxy.cookeasy.FilterActivity
-import com.fuxy.cookeasy.R
+import com.fuxy.cookeasy.*
 import com.fuxy.cookeasy.adapter.RecipeAdapter
 import com.fuxy.cookeasy.db.AppDatabase
 import com.fuxy.cookeasy.entity.ParcelableIngredientFilter
 import com.fuxy.cookeasy.entity.Recipe
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -33,7 +33,7 @@ class RecipesFragment : Fragment() {
         @JvmField
         val FRAGMENT_NAME = "fragment_recipe"
         @JvmField
-        val FILTER_RECIPES_REQUEST = 1
+        val FILTER_RECIPES_REQUEST = 101
         @JvmField
         val EXTRA_FILTER_RESULT = "filter_result"
     }
@@ -70,7 +70,7 @@ class RecipesFragment : Fragment() {
                         arrayOf(10, 0))).toMutableList()
 
                 launch(Dispatchers.Main) {
-                    adapter = RecipeAdapter(recipes!!)
+                    adapter = RecipeAdapter(this@RecipesFragment, recipes!!)
                     recipeRecyclerView?.adapter = adapter
                 }
             }
@@ -194,35 +194,71 @@ class RecipesFragment : Fragment() {
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        if (requestCode == FILTER_RECIPES_REQUEST && resultCode == RESULT_OK) {
-            val result = data?.getParcelableArrayListExtra<ParcelableIngredientFilter>(EXTRA_FILTER_RESULT)
+        when (requestCode) {
+            FILTER_RECIPES_REQUEST -> {
+                if (resultCode == RESULT_OK) {
+                    val result = data?.getParcelableArrayListExtra<ParcelableIngredientFilter>(EXTRA_FILTER_RESULT)
 
-            if (result != null) {
-                val sb = StringBuilder()
+                    if (result != null) {
+                        val sb = StringBuilder()
 
-                val it = result.iterator()
-                while (it.hasNext()) {
-                    val r = it.next()
-                    sb.append("ingredient_id = ", r.ingredientId, " AND ")
-                    sb.append("ingredient_count = ", r.ingredientCount, " AND ")
+                        val it = result.iterator()
+                        while (it.hasNext()) {
+                            val r = it.next()
+                            sb.append("ingredient_id = ", r.ingredientId, " AND ")
+                            sb.append("ingredient_count = ", r.ingredientCount, " AND ")
 
-                    if (it.hasNext())
-                        sb.append("unit_id = ", r.unitId, " OR ")
-                    else
-                        sb.append("unit_id = ", r.unitId)
+                            if (it.hasNext())
+                                sb.append("unit_id = ", r.unitId, " OR ")
+                            else
+                                sb.append("unit_id = ", r.unitId)
+                        }
+
+                        query = "SELECT recipe.* FROM " +
+                                "(SELECT recipe_id, COUNT(*) AS c FROM recipe_ingredient GROUP BY recipe_id) as l " +
+                                "INNER JOIN (SELECT recipe_id, COUNT(*) AS c FROM recipe_ingredient " +
+                                "WHERE $sb GROUP BY recipe_id) AS r ON l.recipe_id = r.recipe_id " +
+                                "INNER JOIN recipe ON l.recipe_id = recipe.id " +
+                                "WHERE l.c = r.c"
+
+                        GlobalScope.launch {
+                            runQueryAndUpdateAdapter(0, 10)
+                        }
+
+                    }
                 }
+            }
+            RecipeActivityConstants.GET_RECIPE_STATE_REQUEST -> {
+                if (resultCode == RESULT_OK) {
+                    val recipeState = RecipeState.valueOf(
+                        data?.getStringExtra(RecipeActivityConstants.EXTRA_RECIPE_STATE)!!)
+                    val recipeId = data.getIntExtra(RecipeActivityConstants.EXTRA_RECIPE_ID, -1)
 
-                query = "SELECT recipe.* FROM " +
-                        "(SELECT recipe_id, COUNT(*) AS c FROM recipe_ingredient GROUP BY recipe_id) as l " +
-                        "INNER JOIN (SELECT recipe_id, COUNT(*) AS c FROM recipe_ingredient " +
-                        "WHERE $sb GROUP BY recipe_id) AS r ON l.recipe_id = r.recipe_id " +
-                        "INNER JOIN recipe ON l.recipe_id = recipe.id " +
-                        "WHERE l.c = r.c"
+                    if (recipeId != -1) {
+                        if (recipeState == RecipeState.EDITED) {
+                            for (i in 0 until recipes!!.size) {
+                                if (recipes!![i].id == recipeId) {
 
-                GlobalScope.launch {
-                    runQueryAndUpdateAdapter(0, 10)
+                                    GlobalScope.launch(IO) {
+                                        val recipeDao = AppDatabase.getInstance(context!!)?.recipeDao()
+                                        val recipe = recipeDao?.getById(recipeId)
+                                        recipes!![i] = recipe!!
+
+                                        GlobalScope.launch(Main) {
+                                            adapter?.notifyItemChanged(i)
+                                        }
+                                    }
+
+                                    break
+                                }
+                            }
+                        } else {
+                            val indexToRemove = recipes!!.indexOfFirst { it.id == recipeId }
+                            recipes?.removeAt(indexToRemove)
+                            adapter?.notifyItemRemoved(indexToRemove)
+                        }
+                    }
                 }
-
             }
         }
     }

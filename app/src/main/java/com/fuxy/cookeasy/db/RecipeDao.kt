@@ -5,7 +5,9 @@ import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.RawQuery
 import androidx.sqlite.db.SupportSQLiteQuery
+import com.fuxy.cookeasy.entity.IngredientFilter
 import com.fuxy.cookeasy.entity.Recipe
+import org.threeten.bp.LocalTime
 
 @Dao
 interface RecipeDao {
@@ -26,4 +28,22 @@ interface RecipeDao {
 
     @Insert
     fun insert(vararg recipe: Recipe): List<Long>
+
+    @Query("UPDATE recipe " +
+            "SET dish = :dish, cooking_time = :cookingTime, description = :description, " +
+            "bucket_image_absolute_path = :bucketImagePath " +
+            "WHERE id = :id")
+    fun updateById(id: Int, dish: String, cookingTime: LocalTime, description: String, bucketImagePath: String): Int
+
+    @Query("UPDATE recipe " +
+            "SET dish = :dish, cooking_time = :cookingTime, description = :description " +
+            "WHERE id = :id")
+    fun updateById(id: Int, dish: String, cookingTime: LocalTime, description: String): Int
+
+    @Query("INSERT INTO recipe (dish, cooking_time, description, bucket_image_absolute_path) " +
+            "VALUES(:dish, :cookingTime, :description, :bucketImagePath)")
+    fun insert(dish: String, cookingTime: LocalTime, description: String, bucketImagePath: String): Long
+
+    @Query("DELETE FROM recipe WHERE id = :id")
+    fun deleteById(id: Int): Int
 }

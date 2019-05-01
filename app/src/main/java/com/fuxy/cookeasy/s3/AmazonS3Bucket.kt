@@ -22,7 +22,8 @@ fun getSimpleObjectOperationHeaders(httpMethod: HTTPMethod, context: Context, ab
         context = context,
         httpMethod = httpMethod,
         uri = "/$absolutePath",
-        headers = headers
+        headers = headers,
+        time = calendar.time
     )
 
     val md = MessageDigest.getInstance("SHA-256")
@@ -63,6 +64,7 @@ suspend fun putObjectToBucket(context: Context, absolutePath: String, contentTyp
         httpMethod = HTTPMethod.PUT,
         uri = "/$absolutePath",
         headers = headers,
+        time = calendar.time,
         payload = bytes
     )
 

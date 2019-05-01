@@ -3,7 +3,8 @@ package com.fuxy.cookeasy.entity
 data class IngredientFilter(
     var ingredient: Ingredient? = null,
     var ingredientCount: Int? = null,
-    var unit: Unit? = null
+    var unit: Unit? = null,
+    var id: Int? = null
 ) {
     fun toParcelable(): ParcelableIngredientFilter {
         return ParcelableIngredientFilter(

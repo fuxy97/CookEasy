@@ -8,6 +8,10 @@ import androidx.room.ForeignKey.SET_NULL
 import androidx.room.PrimaryKey
 
 @Entity(tableName = "recipe_ingredient", foreignKeys = [
+    ForeignKey(entity = Recipe::class,
+        parentColumns = ["id"],
+        childColumns = ["recipe_id"],
+        onDelete = CASCADE),
     ForeignKey(entity = Ingredient::class,
         parentColumns = ["id"],
         childColumns = ["ingredient_id"],

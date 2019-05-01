@@ -2,20 +2,22 @@ package com.fuxy.cookeasy.adapter
 
 import android.content.Context
 import android.content.Intent
-import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.fuxy.cookeasy.EditRecipeActivity
 import com.fuxy.cookeasy.R
 import com.fuxy.cookeasy.RecipeActivity
-import com.fuxy.cookeasy.RecipeActivityExtras
+import com.fuxy.cookeasy.RecipeActivityConstants
 import com.fuxy.cookeasy.db.LocalTimeConverter
 import com.fuxy.cookeasy.entity.Recipe
+import com.fuxy.cookeasy.fragment.RecipesFragment
 
-class RecipeAdapter(private val recipes: List<Recipe>) : RecyclerView.Adapter<RecipeAdapter.ViewHolder>() {
+class RecipeAdapter(private val fragment: RecipesFragment, private val recipes: List<Recipe>)
+    : RecyclerView.Adapter<RecipeAdapter.ViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val itemView = LayoutInflater.from(parent.context).inflate(R.layout.recipe_item, parent, false)
@@ -52,8 +54,8 @@ class RecipeAdapter(private val recipes: List<Recipe>) : RecyclerView.Adapter<Re
             val recipe = recipes[adapterPosition]
 
             val intent = Intent(context, RecipeActivity::class.java)
-            intent.putExtra(RecipeActivityExtras.EXTRA_RECIPE_ID, recipe.id!!)
-            context.startActivity(intent)
+            intent.putExtra(RecipeActivityConstants.EXTRA_RECIPE_ID, recipe.id!!)
+            fragment.startActivityForResult(intent, RecipeActivityConstants.GET_RECIPE_STATE_REQUEST)
         }
     }
 }
