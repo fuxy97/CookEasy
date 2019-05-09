@@ -1,9 +1,9 @@
 package com.fuxy.cookeasy.adapter
 
-import android.graphics.drawable.BitmapDrawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.fuxy.cookeasy.R
@@ -23,22 +23,25 @@ class StepAdapter(private val steps: List<Step>) : RecyclerView.Adapter<StepAdap
         val item = steps[position]
 
         holder.stepNumberTextView?.text = item.stepNumber.toString()
-        holder.stepTextView?.text = item.description
+        holder.stepDescriptionTextView?.text = item.description
 
         if (item.stepBucketImage != null) {
-            holder.stepTextView?.setCompoundDrawablesRelativeWithIntrinsicBounds(
+            holder.stepImageView?.setImageBitmap(item.stepBucketImage.bitmap)
+            /*holder.stepTextView?.setCompoundDrawablesRelativeWithIntrinsicBounds(
                 null, null, null, BitmapDrawable(holder.itemView.resources, item.stepBucketImage.bitmap)
-            )
+            )*/
         }
     }
 
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         var stepNumberTextView: TextView? = null
-        var stepTextView: TextView? = null
+        var stepDescriptionTextView: TextView? = null
+        var stepImageView: ImageView? = null
 
         init {
             stepNumberTextView = itemView.findViewById(R.id.tv_step_number)
-            stepTextView = itemView.findViewById(R.id.tv_step)
+            stepDescriptionTextView = itemView.findViewById(R.id.tv_step_description)
+            stepImageView = itemView.findViewById(R.id.iv_step_image)
         }
     }
 }

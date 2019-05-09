@@ -6,8 +6,12 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
+import android.widget.AdapterView
 import android.widget.ImageView
+import android.widget.Spinner
 import android.widget.TextView
+import androidx.core.widget.NestedScrollView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.fuxy.cookeasy.RecipeActivityConstants.EDIT_RECIPE_REQUEST
@@ -19,6 +23,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.threeten.bp.format.DateTimeFormatter
 
 object RecipeActivityConstants {
     const val EXTRA_RECIPE_ID = "recipe_id"
@@ -39,20 +44,49 @@ class RecipeActivity : AppCompatActivity() {
     private var recipeId: Int = -1
     private var editResultCode: Int = Activity.RESULT_CANCELED
     private var recipeState: RecipeState = RecipeState.DEFAULT
+    private val hourMinuteTimeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("H ч. m мин.")
+    private val minuteTimeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("m мин.")
+    private var recipeNestedScrollView: NestedScrollView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_recipe)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        var isTitleShowed = false
+        supportActionBar?.setDisplayShowTitleEnabled(isTitleShowed)
 
         dishTextView = findViewById(R.id.tv_dish)
         dishImageView = findViewById(R.id.iv_dish_image)
         descriptionTextView = findViewById(R.id.tv_description)
-        cookingTimeTextView = findViewById(R.id.tv_cooking_time)
         ingredientsRecyclerView = findViewById(R.id.rv_ingredients)
         stepsRecyclerView = findViewById(R.id.rv_steps)
+        recipeNestedScrollView = findViewById(R.id.nsv_recipe)
+        cookingTimeTextView = findViewById(R.id.tv_cooking_time)
 
         ingredientsRecyclerView?.layoutManager = LinearLayoutManager(this)
         stepsRecyclerView?.layoutManager = LinearLayoutManager(this)
+
+        ingredientsRecyclerView?.isNestedScrollingEnabled = false
+        ingredientsRecyclerView?.addItemDecoration(VerticalSpaceItemDecoration(50))
+
+        stepsRecyclerView?.isNestedScrollingEnabled = false
+
+        recipeNestedScrollView?.setOnScrollChangeListener { v: NestedScrollView?, _: Int, scrollY: Int,
+                                                            _: Int, _: Int ->
+            if (v != null) {
+                if (scrollY >= dishTextView!!.measuredHeight + 40) {
+                    if (!isTitleShowed) {
+                        isTitleShowed = true
+                        supportActionBar?.setDisplayShowTitleEnabled(true)
+                    }
+                } else {
+                    if (isTitleShowed) {
+                        isTitleShowed = false
+                        supportActionBar?.setDisplayShowTitleEnabled(false)
+                    }
+                }
+            }
+        }
 
         recipeId = intent.getIntExtra(RecipeActivityConstants.EXTRA_RECIPE_ID, -1)
 
@@ -72,10 +106,16 @@ class RecipeActivity : AppCompatActivity() {
             val steps = stepDao.getByRecipeId(recipeId)
 
             GlobalScope.launch(Dispatchers.Main) {
+                supportActionBar?.title = recipe.dish
                 dishTextView?.text = recipe.dish
                 dishImageView?.setImageBitmap(recipe.bucketImage.bitmap)
                 descriptionTextView?.text = recipe.description
-                cookingTimeTextView?.text = LocalTimeConverter.fromLocalTime(recipe.cookingTime)
+
+                if (recipe.cookingTime.hour > 0)
+                    cookingTimeTextView?.text = hourMinuteTimeFormatter.format(recipe.cookingTime)
+                else
+                    cookingTimeTextView?.text = minuteTimeFormatter.format(recipe.cookingTime)
+
                 ingredientsRecyclerView?.adapter = RecipeIngredientAdapter(ingredients)
                 stepsRecyclerView?.adapter = StepAdapter(steps)
             }
@@ -108,6 +148,14 @@ class RecipeActivity : AppCompatActivity() {
                     setResult(editResultCode, returnIntent)
                     finish()
                 }
+            }
+            android.R.id.home -> {
+                val returnIntent = Intent()
+                returnIntent.putExtra(RecipeActivityConstants.EXTRA_RECIPE_ID, recipeId)
+                returnIntent.putExtra(RecipeActivityConstants.EXTRA_RECIPE_STATE, recipeState.name)
+                setResult(editResultCode, returnIntent)
+                finish()
+                return true
             }
         }
 

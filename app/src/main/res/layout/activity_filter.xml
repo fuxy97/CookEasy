@@ -2,26 +2,63 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.a
-    ndroid.com/tools"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:divider="@drawable/divider10dp"
+    android:showDividers="middle"
+    android:padding="20dp"
     tools:context=".FilterActivity">
 
     <TextView
         android:text="@string/cooking_time"
+        android:textColor="@android:color/black"
+        android:textSize="16sp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
-    <EditText
-        android:id="@+id/et_cooking_time"
+    <Spinner
+        android:id="@+id/sp_time_option"
+        android:entries="@array/time_options"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:id="@+id/tv_from"
+        android:text="@string/from"
+        android:visibility="gone"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:textSize="16sp"
+        android:visibility="gone"
+        android:id="@+id/tv_from_cooking_time"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:inputType="number"
+        android:text="@string/choose_time"
         tools:ignore="Autofill,LabelFor" />
 
     <TextView
+        android:id="@+id/tv_to"
+        android:text="@string/to"
+        android:visibility="gone"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:textSize="16sp"
+        android:id="@+id/tv_to_cooking_time"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/choose_time"
+        android:layout_marginBottom="10dp"
+        tools:ignore="Autofill,LabelFor" />
+
+    <TextView
+        android:textColor="@android:color/black"
+        android:textSize="16sp"
         android:text="@string/ingredients"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
@@ -31,11 +68,15 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_add_ingredient"
-        android:text="@string/add_ingredient"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        app:cornerRadius="30dp"
+        android:backgroundTint="@android:color/darker_gray"
+        android:textAllCaps="false"
+        android:textColor="@android:color/black"
+        android:text="@string/add_ingredient" />
 
     <Button
         android:id="@+id/btn_apply"

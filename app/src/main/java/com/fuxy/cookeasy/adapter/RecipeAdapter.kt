@@ -15,9 +15,13 @@ import com.fuxy.cookeasy.RecipeActivityConstants
 import com.fuxy.cookeasy.db.LocalTimeConverter
 import com.fuxy.cookeasy.entity.Recipe
 import com.fuxy.cookeasy.fragment.RecipesFragment
+import org.threeten.bp.format.DateTimeFormatter
 
 class RecipeAdapter(private val fragment: RecipesFragment, private val recipes: List<Recipe>)
     : RecyclerView.Adapter<RecipeAdapter.ViewHolder>() {
+
+    private val minuteTimeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("m мин.")
+    private val hourTimeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("H ч.")
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val itemView = LayoutInflater.from(parent.context).inflate(R.layout.recipe_item, parent, false)
@@ -33,7 +37,11 @@ class RecipeAdapter(private val fragment: RecipesFragment, private val recipes: 
 
         holder.dishTextView?.text = recipe.dish
         holder.dishImageView?.setImageBitmap(recipe.bucketImage.bitmap)
-        holder.cookingTimeTextView?.text = LocalTimeConverter.fromLocalTime(recipe.cookingTime)
+
+        if (recipe.cookingTime.hour > 0)
+            holder.cookingTimeTextView?.text = hourTimeFormatter.format(recipe.cookingTime)
+        else
+            holder.cookingTimeTextView?.text = minuteTimeFormatter.format(recipe.cookingTime)
     }
 
     inner class ViewHolder(val context: Context, itemView: View)

@@ -1,5 +1,6 @@
 package com.fuxy.cookeasy.adapter
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.text.Editable
 import android.text.TextWatcher
@@ -21,7 +22,7 @@ import kotlinx.coroutines.launch
 class IngredientFilterAdapter(private val context: Context, val ingredients: MutableList<IngredientFilter>)
     : RecyclerView.Adapter<IngredientFilterAdapter.ViewHolder>() {
 
-    private var ingredientAdapter: ArrayAdapter<Ingredient>? = null
+/*    private var ingredientAdapter: ArrayAdapter<Ingredient>? = null
     private var unitAdapter: ArrayAdapter<Unit>? = null
 
     init {
@@ -37,7 +38,7 @@ class IngredientFilterAdapter(private val context: Context, val ingredients: Mut
                 unitAdapter = ArrayAdapter(context, android.R.layout.simple_list_item_1, units!!)
             }
         }
-    }
+    }*/
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context)
@@ -49,10 +50,13 @@ class IngredientFilterAdapter(private val context: Context, val ingredients: Mut
         return ingredients.size
     }
 
+    @SuppressLint("SetTextI18n")
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val ingredient = ingredients[position]
+        holder.ingredientTextView.text =
+            "${ingredient.ingredient?.ingredient} ${ingredient.ingredientCount} ${ingredient.unit?.unit}"
 
-        if (ingredient.unit != null) {
+/*        if (ingredient.unit != null) {
             for (i in 0 until unitAdapter?.count!!) {
                 if (unitAdapter?.getItem(i)?.id == ingredient.unit?.id)
                     holder.unitSearchableSpinner.setSelection(i)
@@ -68,18 +72,19 @@ class IngredientFilterAdapter(private val context: Context, val ingredients: Mut
 
         val text = ingredient.ingredientCount?.toString()
         if (text != null)
-            holder.ingredientCountEditText.setText(text)
+            holder.ingredientCountEditText.setText(text)*/
     }
 
     inner class ViewHolder(itemView: View)
         : RecyclerView.ViewHolder(itemView), View.OnClickListener {
-        val unitSearchableSpinner: SearchableSpinner = itemView.findViewById(R.id.sp_unit)
+/*        val unitSearchableSpinner: SearchableSpinner = itemView.findViewById(R.id.sp_unit)
         val ingredientSearchableSpinner: SearchableSpinner = itemView.findViewById(R.id.sp_ingredient)
-        val ingredientCountEditText: EditText = itemView.findViewById(R.id.et_ingredient_count)
+        val ingredientCountEditText: EditText = itemView.findViewById(R.id.et_ingredient_count)*/
+        val ingredientTextView: TextView = itemView.findViewById(R.id.tv_ingredient)
         private val deleteButton: ImageView = itemView.findViewById(R.id.btn_delete)
 
         init {
-            unitSearchableSpinner.setTitle(context.resources.getString(R.string.select_unit))
+            /*unitSearchableSpinner.setTitle(context.resources.getString(R.string.select_unit))
             unitSearchableSpinner.setPositiveButton(context.resources.getString(R.string.ok))
             unitSearchableSpinner.adapter = unitAdapter
             unitSearchableSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
@@ -133,7 +138,7 @@ class IngredientFilterAdapter(private val context: Context, val ingredients: Mut
                     return
                 }
 
-            })
+            })*/
 
             deleteButton.setOnClickListener(this)
         }

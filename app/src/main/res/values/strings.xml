@@ -3,7 +3,7 @@
     <string name="recipes">Рецепты</string>
     <string name="add_recipe">Добавить рецепт</string>
     <string name="settings">Настройки</string>
-    <string name="search_hint">Введите название блюда…</string>
+    <string name="search_hint">Поиск по блюду…</string>
     <string name="cooking_time">Время приготовления</string>
     <string name="ingredients">Ингредиенты</string>
     <string name="ingredient">Ингредиент</string>
@@ -31,6 +31,26 @@
     <string name="delete">Удалить</string>
     <string name="edit">Редактировать</string>
     <string name="add">Добавить</string>
+    <string name="sort">Сортировка</string>
+    <string name="filters">Фильтры</string>
+    <string name="clear">Очистить</string>
+    <string name="cancel">Отмена</string>
+    <string name="enter_count">Введите количество…</string>
+    <string name="enter_ingredient_count_error">Введите количество ингредиента</string>
+    <string name="add_ingredient_error">Ошибка! Вы должны заполнить все поля перед добавление ингредиента.</string>
+    <string name="add_ingredient_image_error">Ошибка! Вы должны добавить фотографию блюда.</string>
+    <string name="add_ingredient_ingredients_error">Ошибка! Вы должны добавить хотя бы один ингредиент.</string>
+    <string name="add_ingredient_steps_error">Ошибка! Вы должны добавить хотя бы один шаг.</string>
+    <string name="add_ingredient_steps_description_error">Ошибка! Вы должны заполнить поле описания во всех шагах.</string>
+    <string name="enter_dish">Введите название блюда…</string>
+    <string name="enter_description">Введите описание…</string>
+    <string name="add_recipe_error">Ошибка! Перед добавлением рецепта заполните все поля.</string>
+    <string name="enter_dish_error">Введите название блюда</string>
+    <string name="enter_description_error">Введите описание</string>
+    <string name="choose_time_error">Выберите время</string>
+    <string name="from">От:</string>
+    <string name="to">До:</string>
+    <string name="time_error_message">Время должно быть в диапазоне от меньшего до большего значения.</string>
 
     <string-array name="sort_options">
         <item>Названию блюда (возрастание)</item>
@@ -39,5 +59,16 @@
         <item>Оценке (убывание)</item>
         <item>Времени приготовления (возрастание)</item>
         <item>Времени приготовления (убывание)</item>
+    </string-array>
+
+    <string-array name="time_options">
+        <item>Точно</item>
+        <item>Диапазон</item>
+    </string-array>
+
+    <string-array name="ingredient_count_options">
+        <item>Точно</item>
+        <item>Приблизительно</item>
+        <item>Диапазон</item>
     </string-array>
 </resources>

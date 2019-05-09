@@ -1,10 +1,15 @@
 package com.fuxy.cookeasy
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.graphics.Rect
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.MenuItem
+import android.view.MotionEvent
+import android.view.inputmethod.InputMethodManager
+import android.widget.EditText
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
@@ -89,5 +94,20 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
         if (requestCode == ADD_RECIPE_REQUEST && resultCode == Activity.RESULT_OK) {
             loadFragment(RecipesFragment(), RecipesFragment.FRAGMENT_NAME)
         }
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
+        if (ev?.action == MotionEvent.ACTION_DOWN) {
+            if (currentFocus is EditText?) {
+                val outRect = Rect()
+                currentFocus?.getGlobalVisibleRect(outRect)
+                if (!outRect.contains(ev.rawX.toInt(), ev.rawY.toInt())) {
+                    currentFocus?.clearFocus()
+                    val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                    imm.hideSoftInputFromWindow(currentFocus?.windowToken, 0)
+                }
+            }
+        }
+        return super.dispatchTouchEvent(ev)
     }
 }

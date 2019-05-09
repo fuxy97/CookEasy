@@ -5,9 +5,11 @@ import android.app.TimePickerDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.view.MenuItem
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.DialogFragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.fuxy.cookeasy.adapter.EditStepAdapter
@@ -20,14 +22,15 @@ import com.fuxy.cookeasy.entity.Recipe
 import com.fuxy.cookeasy.entity.RecipeIngredient
 import com.fuxy.cookeasy.s3.BucketImageObject
 import com.fuxy.cookeasy.s3.putObjectToBucket
+import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import org.threeten.bp.LocalTime
+import org.threeten.bp.format.DateTimeFormatter
 
-class EditRecipeActivity : AppCompatActivity()  {
-
+class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddIngredientListener  {
     enum class Mode { ADDING, EDITING }
 
     companion object {
@@ -50,7 +53,7 @@ class EditRecipeActivity : AppCompatActivity()  {
     private var dishImageView: ImageView? = null
     private var photoActionsLinearLayout: LinearLayout? = null
     private var changePhotoButton: Button? = null
-    private var deletePhotoButton: Button? = null
+    private var deletePhotoButton: ImageButton? = null
     private var cookingTimeTextView: TextView? = null
     private var cookingLocalTime: LocalTime? = null
     private var ingredientsRecyclerView: RecyclerView? = null
@@ -67,14 +70,24 @@ class EditRecipeActivity : AppCompatActivity()  {
     private var mode: Mode? = null
     private var recipeId: Int? = null
     private var dishImageUri: Uri? = null
+    private var addIngredientDialog: AddIngredientDialogFragment? = null
+    private var ingredientAdapter: IngredientFilterAdapter? = null
+    private val hourMinuteTimeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("H ч. m мин.")
+    private val minuteTimeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("m мин.")
+    private var dishTextInputLayout: TextInputLayout? = null
+    private var errorMessageTextView: TextView? = null
+    private var isDishImageSetted: Boolean = false
+    private var descriptionTextInputLayout: TextInputLayout? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_edit_recipe)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         mode = Mode.valueOf(intent.getStringExtra(EXTRA_MODE))
 
         dishEditText = findViewById(R.id.et_dish)
+        dishTextInputLayout = findViewById(R.id.til_dish)
         uploadImageLinearLayout = findViewById(R.id.ll_upload_image)
         dishImageView = findViewById(R.id.iv_dish_image)
         photoActionsLinearLayout = findViewById(R.id.ll_photo_actions)
@@ -87,7 +100,10 @@ class EditRecipeActivity : AppCompatActivity()  {
         addStepButton = findViewById(R.id.btn_add_step)
         deleteStepButton = findViewById(R.id.btn_remove_last_step)
         descriptionEditText = findViewById(R.id.et_description)
+        descriptionTextInputLayout = findViewById(R.id.til_description)
         applyButton = findViewById(R.id.btn_apply)
+        errorMessageTextView = findViewById(R.id.tv_error_message)
+        addIngredientDialog = AddIngredientDialogFragment()
 
         uploadImageLinearLayout?.setOnClickListener {
             startChoosePhotoActivity()
@@ -97,6 +113,7 @@ class EditRecipeActivity : AppCompatActivity()  {
             uploadImageLinearLayout?.visibility = View.VISIBLE
             dishImageView?.visibility = View.GONE
             photoActionsLinearLayout?.visibility = View.GONE
+            isDishImageSetted = false
         }
 
         changePhotoButton?.setOnClickListener {
@@ -106,20 +123,25 @@ class EditRecipeActivity : AppCompatActivity()  {
 
         val timePickerDialog = TimePickerDialog(this, { _: TimePicker, hourOfDay: Int, minute: Int ->
             cookingLocalTime = LocalTime.of(hourOfDay, minute)
-            cookingTimeTextView?.text = LocalTimeConverter.fromLocalTime(cookingLocalTime!!)
+            cookingTimeTextView?.setTextColor(resources.getColor(R.color.materialGrey700))
+
+            if (hourOfDay > 0)
+                cookingTimeTextView?.text = hourMinuteTimeFormatter.format(cookingLocalTime)
+            else
+                cookingTimeTextView?.text = minuteTimeFormatter.format(cookingLocalTime)
         }, 0, 0, true)
         timePickerDialog.setTitle(R.string.choose_time)
         cookingTimeTextView?.setOnClickListener {
             timePickerDialog.show()
         }
 
-        val ingredientAdapter = IngredientFilterAdapter(this, ingredients)
+        ingredientAdapter = IngredientFilterAdapter(this, ingredients)
         ingredientsRecyclerView?.adapter = ingredientAdapter
         ingredientsRecyclerView?.layoutManager = LinearLayoutManager(this)
+        ingredientsRecyclerView?.addItemDecoration(VerticalSpaceItemDecoration(40))
 
         addIngredientButton?.setOnClickListener {
-            ingredients.add(IngredientFilter())
-            ingredientAdapter.notifyItemInserted(ingredients.size - 1)
+            addIngredientDialog?.show(supportFragmentManager, FilterActvityConstants.ADD_INGREDIENT_DIALOG_TAG)
         }
 
         val stepAdapter = object : EditStepAdapter(steps) {
@@ -151,6 +173,56 @@ class EditRecipeActivity : AppCompatActivity()  {
         }
 
         applyButton?.setOnClickListener {
+            dishTextInputLayout?.isErrorEnabled = false
+            descriptionTextInputLayout?.isErrorEnabled = false
+
+            if (dishEditText != null && dishEditText!!.text.isBlank()) {
+                errorMessageTextView?.visibility = View.VISIBLE
+                errorMessageTextView?.text = resources.getString(R.string.add_ingredient_error)
+                dishTextInputLayout?.error = resources.getString(R.string.enter_dish_error)
+                return@setOnClickListener
+            }
+
+            if (!isDishImageSetted) {
+                errorMessageTextView?.visibility = View.VISIBLE
+                errorMessageTextView?.text = resources.getString(R.string.add_ingredient_image_error)
+                return@setOnClickListener
+            }
+
+            if (descriptionEditText != null && descriptionEditText!!.text.isBlank()) {
+                errorMessageTextView?.visibility = View.VISIBLE
+                errorMessageTextView?.text = resources.getString(R.string.add_ingredient_error)
+                descriptionTextInputLayout?.error = resources.getString(R.string.enter_description_error)
+                return@setOnClickListener
+            }
+
+            if (cookingLocalTime == null) {
+                errorMessageTextView?.visibility = View.VISIBLE
+                errorMessageTextView?.text = resources.getString(R.string.add_ingredient_error)
+                cookingTimeTextView?.setTextColor(resources.getColor(android.R.color.holo_red_dark))
+                return@setOnClickListener
+            }
+
+            if (ingredients.isEmpty()) {
+                errorMessageTextView?.visibility = View.VISIBLE
+                errorMessageTextView?.text = resources.getString(R.string.add_ingredient_ingredients_error)
+                return@setOnClickListener
+            }
+
+            if (steps.isEmpty()) {
+                errorMessageTextView?.visibility = View.VISIBLE
+                errorMessageTextView?.text = resources.getString(R.string.add_ingredient_steps_error)
+                return@setOnClickListener
+            }
+
+            for (s in steps) {
+                if (s.description.isNullOrBlank()) {
+                    errorMessageTextView?.visibility = View.VISIBLE
+                    errorMessageTextView?.text = resources.getString(R.string.add_ingredient_steps_description_error)
+                    return@setOnClickListener
+                }
+            }
+
             if (mode == Mode.EDITING) {
                 if (recipeId != -1) {
                     GlobalScope.launch(IO) {
@@ -308,6 +380,7 @@ class EditRecipeActivity : AppCompatActivity()  {
         }
 
         if (mode == Mode.EDITING) {
+            supportActionBar?.title = resources.getString(R.string.edit)
             recipeId = intent.getIntExtra(EXTRA_RECIPE_ID, -1)
             applyButton?.text = resources.getString(R.string.edit)
 
@@ -351,18 +424,24 @@ class EditRecipeActivity : AppCompatActivity()  {
                         descriptionEditText?.setText(recipe?.description)
 
                         dishImageView?.setImageBitmap(recipe?.bucketImage?.bitmap)
+                        isDishImageSetted = true
                         uploadImageLinearLayout?.visibility = View.GONE
                         dishImageView?.visibility = View.VISIBLE
                         photoActionsLinearLayout?.visibility = View.VISIBLE
 
                         cookingLocalTime = recipe?.cookingTime
-                        cookingTimeTextView?.text = LocalTimeConverter.fromLocalTime(cookingLocalTime!!)
+                        if (cookingLocalTime != null && cookingLocalTime!!.hour > 0)
+                            cookingTimeTextView?.text = hourMinuteTimeFormatter.format(cookingLocalTime)
+                        else
+                            cookingTimeTextView?.text = minuteTimeFormatter.format(cookingLocalTime)
 
-                        ingredientAdapter.notifyDataSetChanged()
+                        ingredientAdapter?.notifyDataSetChanged()
                         stepAdapter.notifyDataSetChanged()
                     }
                 }
             }
+        } else {
+            supportActionBar?.title = resources.getString(R.string.add)
         }
     }
 
@@ -399,6 +478,7 @@ class EditRecipeActivity : AppCompatActivity()  {
                     dishImageView?.setImageURI(null)
                     dishImageView?.setImageURI(selectedImageUri)
                     dishImageUri = selectedImageUri
+                    isDishImageSetted = true
 
                     uploadImageLinearLayout?.visibility = View.GONE
                     dishImageView?.visibility = View.VISIBLE
@@ -414,5 +494,21 @@ class EditRecipeActivity : AppCompatActivity()  {
                 }
             }
         }
+    }
+
+    override fun addIngredient(dialog: DialogFragment, ingredient: IngredientFilter) {
+        ingredients.add(ingredient)
+        ingredientAdapter?.notifyDataSetChanged()
+        //ingredientAdapter?.notifyItemInserted(ingredients.size - 1)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+        if (item?.itemId == android.R.id.home) {
+            setResult(Activity.RESULT_CANCELED)
+            finish()
+            return true
+        }
+
+        return super.onOptionsItemSelected(item)
     }
 }

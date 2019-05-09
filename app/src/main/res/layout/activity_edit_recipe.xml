@@ -1,28 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView
+<androidx.core.widget.NestedScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_height="match_parent"
-    android:layout_width="match_parent">
+    android:layout_width="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
     <LinearLayout
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
         <TextView
-            android:text="@string/dish_name"
+            android:id="@+id/tv_error_message"
+            android:textColor="@android:color/holo_red_dark"
+            android:text="@string/add_recipe_error"
+            android:layout_margin="20dp"
+            android:visibility="gone"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
-        <EditText
-            android:id="@+id/et_dish"
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_dish"
+            android:layout_margin="20dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="text"
-            tools:ignore="Autofill,LabelFor" />
+            app:errorEnabled="true">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_dish"
+                android:hint="@string/enter_dish"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text" />
+
+        </com.google.android.material.textfield.TextInputLayout>
 
         <FrameLayout
             android:layout_width="match_parent"
+            android:layout_marginBottom="20dp"
             android:layout_height="200dp">
             <LinearLayout
                 android:id="@+id/ll_upload_image"
@@ -46,6 +61,7 @@
                 <TextView
                     android:text="@string/upload_note"
                     android:layout_gravity="center_horizontal"
+                    android:gravity="center_horizontal"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content" />
 
@@ -66,90 +82,158 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content">
 
-                <Button
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_change_photo"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:drawableStart="@drawable/ic_change_photo"
-                    android:text="@string/change" />
+                    android:backgroundTint="@color/materialGrey300"
+                    app:icon="@drawable/ic_change_photo"
+                    app:iconTint="@android:color/black"
+                    app:iconGravity="start"
+                    android:elevation="0dp"
+                    android:padding="5dp"
+                    android:textAllCaps="false"
+                    android:text="@string/change"
+                    android:textColor="@android:color/black" />
 
-                <Button
+                <ImageButton
                     android:id="@+id/btn_delete_photo"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:drawable="@drawable/ic_delete_photo" />
+                    android:backgroundTint="@color/materialGrey300"
+                    android:elevation="0dp"
+                    android:paddingTop="12dp"
+                    android:paddingBottom="12dp"
+                    android:src="@drawable/ic_delete_photo"
+                    tools:ignore="ContentDescription" />
 
             </LinearLayout>
         </FrameLayout>
 
-        <TextView
-            android:text="@string/dish_description"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-        <EditText
-            android:id="@+id/et_description"
-            android:inputType="textMultiLine"
-            android:lines="4"
-            android:minLines="1"
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_description"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            tools:ignore="Autofill,LabelFor" />
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:layout_marginBottom="20dp"
+            app:errorEnabled="true">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_description"
+                android:hint="@string/enter_description"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textMultiLine"
+                android:lines="4"
+                android:minLines="1" />
+
+        </com.google.android.material.textfield.TextInputLayout>
 
         <TextView
             android:text="@string/cooking_time"
+            android:textColor="@android:color/black"
+            android:textSize="16sp"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:layout_marginBottom="10dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
         <TextView
             android:id="@+id/tv_cooking_time"
             android:text="@string/choose_time"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:layout_marginBottom="20dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
 
         <TextView
             android:text="@string/ingredients"
+            android:textColor="@android:color/black"
+            android:textSize="16sp"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:layout_marginBottom="10dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_ingredients"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:layout_marginBottom="10dp"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:overScrollMode="never" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_add_ingredient"
             android:text="@string/add_ingredient"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            app:cornerRadius="30dp"
+            android:backgroundTint="@android:color/darker_gray"
+            android:textAllCaps="false"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:layout_marginBottom="20dp"
+            android:textColor="@android:color/black" />
 
         <TextView
+            android:textColor="@android:color/black"
+            android:textSize="16sp"
             android:text="@string/steps"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:layout_marginBottom="10dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_steps"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:layout_marginBottom="15dp"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:overScrollMode="never" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_add_step"
             android:text="@string/add_step"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:layout_marginBottom="10dp"
+            app:cornerRadius="30dp"
+            android:backgroundTint="@android:color/darker_gray"
+            android:textAllCaps="false"
+            android:textColor="@android:color/black" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_remove_last_step"
             android:text="@string/remove_last_step"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:layout_marginBottom="20dp"
+            app:cornerRadius="30dp"
+            android:backgroundTint="@android:color/darker_gray"
+            android:textAllCaps="false"
+            android:textColor="@android:color/black" />
 
         <Button
             android:id="@+id/btn_apply"
             android:text="@string/add"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:layout_marginBottom="20dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
     </LinearLayout>
-</ScrollView>
+</androidx.core.widget.NestedScrollView>

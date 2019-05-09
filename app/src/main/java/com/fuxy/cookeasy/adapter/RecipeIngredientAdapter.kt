@@ -5,13 +5,13 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.fuxy.cookeasy.R
 import com.fuxy.cookeasy.entity.RecipeIngredientUnitIngredient
 
 class RecipeIngredientAdapter(private val ingredients: List<RecipeIngredientUnitIngredient>)
     : RecyclerView.Adapter<RecipeIngredientAdapter.ViewHolder>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val itemView = LayoutInflater.from(parent.context)
-            .inflate(android.R.layout.simple_list_item_1, parent, false)
+        val itemView = LayoutInflater.from(parent.context).inflate(R.layout.ingredient_item, parent, false)
         return ViewHolder(itemView)
     }
 
@@ -28,7 +28,7 @@ class RecipeIngredientAdapter(private val ingredients: List<RecipeIngredientUnit
         var textView: TextView? = null
 
         init {
-            textView = itemView.findViewById(android.R.id.text1)
+            textView = itemView.findViewById(R.id.tv_ingredient)
         }
     }
 }

@@ -2,14 +2,18 @@ package com.fuxy.cookeasy.fragment
 
 import android.app.Activity.RESULT_OK
 import android.app.AlertDialog
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
+import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
-import android.widget.ProgressBar
-import android.widget.SearchView
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
+import android.widget.*
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -40,9 +44,9 @@ class RecipesFragment : Fragment() {
 
     private var recipeRecyclerView: RecyclerView? = null
     private var progressBar: ProgressBar? = null
-    private var searchView: SearchView? = null
-    private var filterButton: ImageView? = null
-    private var sortButton: ImageView? = null
+    private var searchEditText: EditText? = null
+    private var filterButton: Button? = null
+    private var sortButton: Button? = null
     private var sortOptionsDialog: AlertDialog? = null
     private var orderColumn: String = "dish"
     private var order: String = "ASC"
@@ -55,7 +59,8 @@ class RecipesFragment : Fragment() {
 
         recipeRecyclerView = view.findViewById(R.id.rv_recipe)
         progressBar = view.findViewById(R.id.pb_recipe_is_loaded)
-        searchView = view.findViewById(R.id.sv_search_bar)
+        //searchView = view.findViewById(R.id.sv_search_bar)
+        searchEditText = view.findViewById(R.id.et_search_bar)
         filterButton = view.findViewById(R.id.btn_filter)
         sortButton = view.findViewById(R.id.btn_sort)
         val layoutManager = GridLayoutManager(view.context, 2)
@@ -84,8 +89,8 @@ class RecipesFragment : Fragment() {
                     withContext(Dispatchers.IO) {
                         val recipe = AppDatabase.getInstance(context!!)?.recipeDao()
                         val newRecipes = recipe!!.rawQuery(SimpleSQLiteQuery(
-                            "$query ORDER BY $orderColumn $order LIMIT ? OFFSET ?", arrayOf(nextItem, 10)))
-                        recipes?.clear()
+                            "$query ORDER BY $orderColumn $order LIMIT ? OFFSET ?", arrayOf(10, nextItem)))
+                        //recipes?.clear()
                         recipes?.addAll(newRecipes)
                     }
 
@@ -98,9 +103,50 @@ class RecipesFragment : Fragment() {
 
         })
 
-        searchView?.isSubmitButtonEnabled = true
+        searchEditText?.setOnEditorActionListener { v, actionId, event ->
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                val query = searchEditText?.text.toString()
+                if (query.isNotEmpty()) {
+                    this@RecipesFragment.query = "SELECT * FROM recipe " +
+                            "WHERE lower(dish) LIKE '%${query.toLowerCase()}%'"
+                    GlobalScope.launch {
+                        runQueryAndUpdateAdapter(0, 10)
+                    }
+                } else {
+                    this@RecipesFragment.query = "SELECT * FROM recipe"
+                    GlobalScope.launch {
+                        runQueryAndUpdateAdapter(0, 10)
+                    }
+                }
 
-        val closeButton: View? = searchView?.findViewById(
+                searchEditText?.clearFocus()
+                val imm = context?.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                imm.toggleSoftInput(0, 0)
+                return@setOnEditorActionListener true
+            }
+            return@setOnEditorActionListener false
+        }
+
+/*
+        searchEditText?.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                searchEditText?.clearFocus()
+            }
+
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+                return
+            }
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                return
+            }
+
+        })
+*/
+
+        //searchView?.isSubmitButtonEnabled = true
+
+/*        val closeButton: View? = searchView?.findViewById(
             resources.getIdentifier("android:id/search_close_btn", null, null))
 
         closeButton?.setOnClickListener {
@@ -108,9 +154,9 @@ class RecipesFragment : Fragment() {
             GlobalScope.launch(Dispatchers.IO) {
                 runQueryAndUpdateAdapter(0, 10)
             }
-        }
+        }*/
 
-        searchView?.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+/*        searchView?.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 if (query != null) {
                     this@RecipesFragment.query = "SELECT * FROM recipe " +
@@ -125,7 +171,7 @@ class RecipesFragment : Fragment() {
             override fun onQueryTextChange(newText: String?): Boolean {
                 return false
             }
-        })
+        })*/
 
         filterButton?.setOnClickListener {
             val intent = Intent(view.context, FilterActivity::class.java)
