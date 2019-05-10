@@ -62,7 +62,7 @@ class FilterActivity : AppCompatActivity(), AddIngredientDialogFragment.AddIngre
         toCookingTimeTextView = findViewById(R.id.tv_to_cooking_time)
         timeOptionSpinner = findViewById(R.id.sp_time_option)
 
-        ingredientsAdapter = IngredientFilterAdapter(this, ingredients)
+        ingredientsAdapter = IngredientFilterAdapter(/*this, */ingredients)
         ingredientsRecyclerView?.adapter = ingredientsAdapter
         ingredientsRecyclerView?.layoutManager = LinearLayoutManager(this)
         ingredientsRecyclerView?.addItemDecoration(VerticalSpaceItemDecoration(40))
@@ -116,7 +116,7 @@ class FilterActivity : AppCompatActivity(), AddIngredientDialogFragment.AddIngre
         }
 
         applyButton?.setOnClickListener {
-            for (i in ingredients) {
+/*            for (i in ingredients) {
                 if (i.ingredientCount == null) {
                      AlertDialog.Builder(this)
                         .setTitle(R.string.error)
@@ -128,9 +128,13 @@ class FilterActivity : AppCompatActivity(), AddIngredientDialogFragment.AddIngre
                          .show()
                     return@setOnClickListener
                 }
-            }
+            }*/
             val returnIntent = Intent()
-            returnIntent.putParcelableArrayListExtra(RecipesFragment.EXTRA_FILTER_RESULT,
+            returnIntent.putExtra(RecipesFragment.EXTRA_FILTER_RESULT_FROM_TIME_HOUR, fromCookingLocalTime?.hour)
+            returnIntent.putExtra(RecipesFragment.EXTRA_FILTER_RESULT_FROM_TIME_MINUTE, fromCookingLocalTime?.minute)
+            returnIntent.putExtra(RecipesFragment.EXTRA_FILTER_RESULT_TO_TIME_HOUR, toCookingLocalTime?.hour)
+            returnIntent.putExtra(RecipesFragment.EXTRA_FILTER_RESULT_TO_TIME_MINUTE, toCookingLocalTime?.minute)
+            returnIntent.putParcelableArrayListExtra(RecipesFragment.EXTRA_FILTER_RESULT_INGREDIENTS,
                 ArrayList(ingredients.map { it.toParcelable() }) )
             setResult(Activity.RESULT_OK, returnIntent)
             finish()

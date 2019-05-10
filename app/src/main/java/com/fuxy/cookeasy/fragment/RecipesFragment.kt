@@ -5,9 +5,6 @@ import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
-import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -21,6 +18,8 @@ import androidx.sqlite.db.SimpleSQLiteQuery
 import com.fuxy.cookeasy.*
 import com.fuxy.cookeasy.adapter.RecipeAdapter
 import com.fuxy.cookeasy.db.AppDatabase
+import com.fuxy.cookeasy.db.LocalTimeConverter
+import com.fuxy.cookeasy.entity.IngredientCountOption
 import com.fuxy.cookeasy.entity.ParcelableIngredientFilter
 import com.fuxy.cookeasy.entity.Recipe
 import kotlinx.coroutines.Dispatchers
@@ -29,7 +28,9 @@ import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.threeten.bp.LocalTime
 import java.lang.StringBuilder
+import kotlin.math.ceil
 
 class RecipesFragment : Fragment() {
 
@@ -39,7 +40,15 @@ class RecipesFragment : Fragment() {
         @JvmField
         val FILTER_RECIPES_REQUEST = 101
         @JvmField
-        val EXTRA_FILTER_RESULT = "filter_result"
+        val EXTRA_FILTER_RESULT_INGREDIENTS = "filter_result_ingredients"
+        @JvmField
+        val EXTRA_FILTER_RESULT_FROM_TIME_HOUR = "filter_result_from_time_hour"
+        @JvmField
+        val EXTRA_FILTER_RESULT_FROM_TIME_MINUTE = "filter_result_from_time_minute"
+        @JvmField
+        val EXTRA_FILTER_RESULT_TO_TIME_HOUR = "filter_result_to_time_hour"
+        @JvmField
+        val EXTRA_FILTER_RESULT_TO_TIME_MINUTE = "filter_result_to_time_minute"
     }
 
     private var recipeRecyclerView: RecyclerView? = null
@@ -103,7 +112,7 @@ class RecipesFragment : Fragment() {
 
         })
 
-        searchEditText?.setOnEditorActionListener { v, actionId, event ->
+        searchEditText?.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_SEARCH) {
                 val query = searchEditText?.text.toString()
                 if (query.isNotEmpty()) {
@@ -243,16 +252,49 @@ class RecipesFragment : Fragment() {
         when (requestCode) {
             FILTER_RECIPES_REQUEST -> {
                 if (resultCode == RESULT_OK) {
-                    val result = data?.getParcelableArrayListExtra<ParcelableIngredientFilter>(EXTRA_FILTER_RESULT)
+                    val timeFromHour = data?.getIntExtra(EXTRA_FILTER_RESULT_FROM_TIME_HOUR, -1)
+                    val timeFromMinute = data?.getIntExtra(EXTRA_FILTER_RESULT_FROM_TIME_MINUTE, -1)
+                    val timeToHour = data?.getIntExtra(EXTRA_FILTER_RESULT_TO_TIME_HOUR, -1)
+                    val timeToMinute = data?.getIntExtra(EXTRA_FILTER_RESULT_TO_TIME_MINUTE, -1)
 
-                    if (result != null) {
+                    var timeFrom: LocalTime? = null
+                    if (timeFromHour != null && timeFromHour >= 0 && timeFromMinute != null && timeFromMinute >= 0)
+                        timeFrom = LocalTime.of(timeFromHour, timeFromMinute)
+
+                    var timeTo: LocalTime? = null
+                    if (timeToHour != null && timeToHour >= 0 && timeToMinute != null && timeToMinute >= 0)
+                        timeTo = LocalTime.of(timeToHour, timeToMinute)
+
+                    val resultIngredients = data?.getParcelableArrayListExtra<ParcelableIngredientFilter>(
+                        EXTRA_FILTER_RESULT_INGREDIENTS)
+
+                    if (resultIngredients != null) {
                         val sb = StringBuilder()
 
-                        val it = result.iterator()
+                        val it = resultIngredients.iterator()
                         while (it.hasNext()) {
                             val r = it.next()
                             sb.append("ingredient_id = ", r.ingredientId, " AND ")
-                            sb.append("ingredient_count = ", r.ingredientCount, " AND ")
+
+                            when (r.ingredientCountOption) {
+                                IngredientCountOption.EXACTLY -> {
+                                    sb.append("ingredient_count = ", r.toIngredientCount, " AND ")
+                                }
+                                IngredientCountOption.APPROXIMATELY -> {
+                                    sb.append("ingredient_count BETWEEN ",
+                                        (r.toIngredientCount - r.toIngredientCount * 0.35).toInt(),
+                                        " AND ",
+                                        ceil(r.toIngredientCount + r.toIngredientCount * 0.35).toInt(),
+                                        " AND "
+                                    )
+                                }
+                                IngredientCountOption.RANGE -> {
+                                    sb.append(
+                                        "ingredient_count BETWEEN ", r.fromIngredientCount, " AND ",
+                                        r.toIngredientCount, " AND "
+                                    )
+                                }
+                            }
 
                             if (it.hasNext())
                                 sb.append("unit_id = ", r.unitId, " OR ")
@@ -265,7 +307,12 @@ class RecipesFragment : Fragment() {
                                 "INNER JOIN (SELECT recipe_id, COUNT(*) AS c FROM recipe_ingredient " +
                                 "WHERE $sb GROUP BY recipe_id) AS r ON l.recipe_id = r.recipe_id " +
                                 "INNER JOIN recipe ON l.recipe_id = recipe.id " +
-                                "WHERE l.c = r.c"
+                                "WHERE l.c = r.c" +
+                                if (timeFrom != null) " AND time(recipe.cooking_time) BETWEEN " +
+                                        "time('${LocalTimeConverter.fromLocalTime(timeFrom)}')" else {""} +
+                                if (timeTo != null) {" AND " + if (timeFrom == null) "time(recipe.cooking_time) = "
+                                else {""} +
+                                        "time('${LocalTimeConverter.fromLocalTime(timeTo)}')"} else ""
 
                         GlobalScope.launch {
                             runQueryAndUpdateAdapter(0, 10)

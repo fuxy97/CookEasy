@@ -135,7 +135,7 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
             timePickerDialog.show()
         }
 
-        ingredientAdapter = IngredientFilterAdapter(this, ingredients)
+        ingredientAdapter = IngredientFilterAdapter(/*this, */ingredients)
         ingredientsRecyclerView?.adapter = ingredientAdapter
         ingredientsRecyclerView?.layoutManager = LinearLayoutManager(this)
         ingredientsRecyclerView?.addItemDecoration(VerticalSpaceItemDecoration(40))
@@ -239,7 +239,7 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
                             ingredientDao?.insertByIngredientFilter(
                                 recipeId = recipeId!!,
                                 ingredientId = it.ingredient?.id!!,
-                                ingredientCount = it.ingredientCount!!,
+                                ingredientCount = it.toIngredientCount!!,
                                 unitId = it.unit?.id!!
                             )
                         }
@@ -250,7 +250,7 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
                                 id = it.id!!,
                                 recipeId = recipeId!!,
                                 ingredientId = it.ingredient?.id!!,
-                                ingredientCount = it.ingredientCount!!,
+                                ingredientCount = it.toIngredientCount!!,
                                 unitId = it.unit?.id!!
                             )
                         }
@@ -352,7 +352,7 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
                         ingredientDao?.insertByIngredientFilter(
                             recipeId = recipeId!!,
                             ingredientId = it.ingredient?.id!!,
-                            ingredientCount = it.ingredientCount!!,
+                            ingredientCount = it.toIngredientCount!!,
                             unitId = it.unit?.id!!
                         )
                     }
@@ -402,7 +402,7 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
                         for (i in ingredientsBackup!!) {
                             ingredients.add(IngredientFilter(
                                 ingredient = ingredientDao?.getById(i.ingredientId),
-                                ingredientCount = i.ingredientCount,
+                                toIngredientCount = i.ingredientCount,
                                 unit = unitDao?.getById(i.unitId),
                                 id = i.id
                             ))

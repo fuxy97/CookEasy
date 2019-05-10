@@ -10,6 +10,7 @@ import android.widget.*
 import androidx.fragment.app.DialogFragment
 import com.fuxy.cookeasy.db.AppDatabase
 import com.fuxy.cookeasy.entity.Ingredient
+import com.fuxy.cookeasy.entity.IngredientCountOption
 import com.fuxy.cookeasy.entity.IngredientFilter
 import com.fuxy.cookeasy.entity.Unit
 import com.google.android.material.textfield.TextInputLayout
@@ -24,19 +25,20 @@ object AddIngredientDialogFragmentConstants {
     const val ARGUMENT_MODE = "mode"
 }
 
-class AddIngredientDialogFragment() : DialogFragment() {
+class AddIngredientDialogFragment : DialogFragment() {
     private var ingredientSearchableSpinner: SearchableSpinner? = null
     private var unitSearchableSpinner: SearchableSpinner? = null
     private var errorMessageTextView: TextView? = null
     private var listener: AddIngredientListener? = null
     private var fromTextView: TextView? = null
     private var fromIngredientCountEditText: EditText? = null
-    private var fromIngredientTextInputLayout: TextInputLayout? = null
+    private var fromIngredientCountTextInputLayout: TextInputLayout? = null
     private var toTextView: TextView? = null
     private var toIngredientCountEditText: EditText? = null
     private var toIngredientCountTextInputLayout: TextInputLayout? = null
     private var ingredientCountOptionSpinner: Spinner? = null
     private var mode: AddIngredientDialogMode = AddIngredientDialogMode.DEFAULT
+    private var ingredientCountOption: IngredientCountOption = IngredientCountOption.EXACTLY
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val view = activity?.layoutInflater?.inflate(R.layout.dialog_add_ingredient, null)
@@ -53,7 +55,7 @@ class AddIngredientDialogFragment() : DialogFragment() {
         errorMessageTextView = view?.findViewById(R.id.tv_error_message)
         fromTextView = view?.findViewById(R.id.tv_from)
         fromIngredientCountEditText = view?.findViewById(R.id.et_from_ingredient_count)
-        fromIngredientTextInputLayout = view?.findViewById(R.id.til_from_ingredient_count)
+        fromIngredientCountTextInputLayout = view?.findViewById(R.id.til_from_ingredient_count)
         ingredientCountOptionSpinner = view?.findViewById(R.id.sp_ingredient_count_option)
 
         unitSearchableSpinner?.setTitle(context?.resources?.getString(R.string.select_unit))
@@ -67,22 +69,25 @@ class AddIngredientDialogFragment() : DialogFragment() {
                 when (position) {
                     0 -> {
                         fromTextView?.visibility = View.GONE
-                        fromIngredientTextInputLayout?.visibility = View.GONE
-                        fromIngredientTextInputLayout?.isErrorEnabled = false
+                        fromIngredientCountTextInputLayout?.visibility = View.GONE
+                        fromIngredientCountTextInputLayout?.isErrorEnabled = false
                         fromIngredientCountEditText?.text?.clear()
                         toTextView?.visibility = View.GONE
+                        ingredientCountOption = IngredientCountOption.EXACTLY
                     }
                     1 -> {
                         fromTextView?.visibility = View.GONE
-                        fromIngredientTextInputLayout?.visibility = View.GONE
-                        fromIngredientTextInputLayout?.isErrorEnabled = false
+                        fromIngredientCountTextInputLayout?.visibility = View.GONE
+                        fromIngredientCountTextInputLayout?.isErrorEnabled = false
                         fromIngredientCountEditText?.text?.clear()
                         toTextView?.visibility = View.GONE
+                        ingredientCountOption = IngredientCountOption.APPROXIMATELY
                     }
                     2 -> {
                         fromTextView?.visibility = View.VISIBLE
-                        fromIngredientTextInputLayout?.visibility = View.VISIBLE
+                        fromIngredientCountTextInputLayout?.visibility = View.VISIBLE
                         toTextView?.visibility = View.VISIBLE
+                        ingredientCountOption = IngredientCountOption.RANGE
                     }
                 }
             }
@@ -110,9 +115,9 @@ class AddIngredientDialogFragment() : DialogFragment() {
         val dialog = AlertDialog.Builder(context!!)
             .setTitle(R.string.add_ingredient)
             .setView(view)
-            .setPositiveButton(R.string.ok) { dialog: DialogInterface, id: Int ->
+            .setPositiveButton(R.string.ok) { _: DialogInterface, _: Int ->
             }
-            .setNegativeButton(R.string.cancel) { dialog: DialogInterface, id: Int ->
+            .setNegativeButton(R.string.cancel) { _: DialogInterface, _: Int ->
             }
             .create()
 
@@ -125,23 +130,52 @@ class AddIngredientDialogFragment() : DialogFragment() {
         if (dialog != null) {
             val button = (dialog as AlertDialog).getButton(Dialog.BUTTON_POSITIVE)
             button.setOnClickListener {
-                val text = toIngredientCountEditText?.text.toString()
-                if (text.isNotEmpty()) {
-                    val ingredient: Ingredient = ingredientSearchableSpinner?.selectedItem as Ingredient
-                    val unit: Unit = unitSearchableSpinner?.selectedItem as Unit
+                when (ingredientCountOption) {
+                    IngredientCountOption.EXACTLY, IngredientCountOption.APPROXIMATELY -> {
+                        val text  = toIngredientCountEditText?.text.toString()
 
-                    listener?.addIngredient(this,
-                        IngredientFilter(
-                            ingredient = ingredient,
-                            ingredientCount = text.toInt(),
-                            unit = unit
-                        )
-                    )
-                    dialog?.dismiss()
-                } else {
-                    toIngredientCountTextInputLayout?.error = resources.getString(R.string.enter_ingredient_count_error)
-                    errorMessageTextView?.visibility = View.VISIBLE
+                        if (text.isEmpty()) {
+                            toIngredientCountTextInputLayout?.error = resources
+                                .getString(R.string.enter_ingredient_count_error)
+                            errorMessageTextView?.visibility = View.VISIBLE
+                            return@setOnClickListener
+                        }
+                    }
+                    IngredientCountOption.RANGE -> {
+                        val toText = toIngredientCountEditText?.text.toString()
+                        val fromText = fromIngredientCountEditText?.text.toString()
+
+                        if (toText.isEmpty()) {
+                            toIngredientCountTextInputLayout?.error = resources
+                                .getString(R.string.enter_ingredient_count_error)
+                            errorMessageTextView?.visibility = View.VISIBLE
+                            return@setOnClickListener
+                        }
+
+                        if (fromText.isEmpty()) {
+                            fromIngredientCountTextInputLayout?.error = resources
+                                .getString(R.string.enter_ingredient_count_error)
+                            errorMessageTextView?.visibility = View.VISIBLE
+                            return@setOnClickListener
+                        }
+                    }
                 }
+
+                val ingredient: Ingredient = ingredientSearchableSpinner?.selectedItem as Ingredient
+                val unit: Unit = unitSearchableSpinner?.selectedItem as Unit
+
+                val fromText = fromIngredientCountEditText?.text?.toString()
+
+                listener?.addIngredient(this,
+                    IngredientFilter(
+                        ingredient = ingredient,
+                        fromIngredientCount = if (fromText.isNullOrEmpty()) null else fromText.toInt(),
+                        toIngredientCount = toIngredientCountEditText?.text?.toString()?.toInt(),
+                        unit = unit,
+                        ingredientCountOption = ingredientCountOption
+                    )
+                )
+                dialog?.dismiss()
             }
         }
     }
