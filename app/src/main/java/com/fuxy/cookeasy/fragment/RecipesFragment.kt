@@ -200,11 +200,11 @@ class RecipesFragment : Fragment() {
                         order = "DESC"
                     }
                     2 -> {
-                        orderColumn = "dish"
+                        orderColumn = "rating"
                         order = "ASC"
                     }
                     3 -> {
-                        orderColumn = "dish"
+                        orderColumn = "rating"
                         order = "DESC"
                     }
                     4 -> {

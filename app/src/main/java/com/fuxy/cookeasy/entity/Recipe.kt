@@ -12,5 +12,6 @@ data class Recipe(
     val dish: String,
     @ColumnInfo(name = "cooking_time") val cookingTime: LocalTime,
     @ColumnInfo(name = "bucket_image_absolute_path") val bucketImage: BucketImageObject,
-    val description: String
+    val description: String,
+    val rating: Float = 0.0f
 )

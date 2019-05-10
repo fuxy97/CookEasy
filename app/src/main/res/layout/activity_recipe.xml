@@ -74,7 +74,8 @@
             android:paddingTop="20dp"
             android:paddingStart="10dp"
             android:paddingEnd="10dp"
-            android:paddingBottom="20dp">
+            android:paddingBottom="20dp"
+            android:layout_marginBottom="20dp">
 
             <TextView
                 android:textColor="@android:color/black"
@@ -93,6 +94,17 @@
                 android:layout_height="wrap_content" />
 
         </LinearLayout>
+
+        <androidx.appcompat.widget.AppCompatRatingBar
+                android:id="@+id/rb_rating"
+                android:numStars="5"
+                android:stepSize="0.5"
+                android:scaleX=".8"
+                android:scaleY=".8"
+                android:layout_marginBottom="20dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
 
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

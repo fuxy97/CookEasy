@@ -7,10 +7,7 @@ import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.widget.AdapterView
-import android.widget.ImageView
-import android.widget.Spinner
-import android.widget.TextView
+import android.widget.*
 import androidx.core.widget.NestedScrollView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -47,6 +44,8 @@ class RecipeActivity : AppCompatActivity() {
     private val hourMinuteTimeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("H ч. m мин.")
     private val minuteTimeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("m мин.")
     private var recipeNestedScrollView: NestedScrollView? = null
+    private var ratingBar: RatingBar? = null
+    private var isRatingChanged: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,6 +61,7 @@ class RecipeActivity : AppCompatActivity() {
         stepsRecyclerView = findViewById(R.id.rv_steps)
         recipeNestedScrollView = findViewById(R.id.nsv_recipe)
         cookingTimeTextView = findViewById(R.id.tv_cooking_time)
+        ratingBar = findViewById(R.id.rb_rating)
 
         ingredientsRecyclerView?.layoutManager = LinearLayoutManager(this)
         stepsRecyclerView?.layoutManager = LinearLayoutManager(this)
@@ -88,6 +88,13 @@ class RecipeActivity : AppCompatActivity() {
             }
         }
 
+        ratingBar?.onRatingBarChangeListener =
+            RatingBar.OnRatingBarChangeListener { _, _, fromUser ->
+                if (fromUser) {
+                    isRatingChanged = true
+                }
+            }
+
         recipeId = intent.getIntExtra(RecipeActivityConstants.EXTRA_RECIPE_ID, -1)
 
         if (recipeId != -1) {
@@ -110,6 +117,7 @@ class RecipeActivity : AppCompatActivity() {
                 dishTextView?.text = recipe.dish
                 dishImageView?.setImageBitmap(recipe.bucketImage.bitmap)
                 descriptionTextView?.text = recipe.description
+                ratingBar?.rating = recipe.rating
 
                 if (recipe.cookingTime.hour > 0)
                     cookingTimeTextView?.text = hourMinuteTimeFormatter.format(recipe.cookingTime)
@@ -150,11 +158,26 @@ class RecipeActivity : AppCompatActivity() {
                 }
             }
             android.R.id.home -> {
-                val returnIntent = Intent()
-                returnIntent.putExtra(RecipeActivityConstants.EXTRA_RECIPE_ID, recipeId)
-                returnIntent.putExtra(RecipeActivityConstants.EXTRA_RECIPE_STATE, recipeState.name)
-                setResult(editResultCode, returnIntent)
-                finish()
+                if (isRatingChanged) {
+                    GlobalScope.launch(Dispatchers.IO) {
+                        AppDatabase.getInstance(this@RecipeActivity)?.recipeDao()?.changeRatingById(
+                            ratingBar!!.rating, recipeId)
+                    }.invokeOnCompletion {
+                        editResultCode = Activity.RESULT_OK
+                        recipeState = RecipeState.EDITED
+                        val returnIntent = Intent()
+                        returnIntent.putExtra(RecipeActivityConstants.EXTRA_RECIPE_ID, recipeId)
+                        returnIntent.putExtra(RecipeActivityConstants.EXTRA_RECIPE_STATE, recipeState.name)
+                        setResult(editResultCode, returnIntent)
+                        finish()
+                    }
+                } else {
+                    val returnIntent = Intent()
+                    returnIntent.putExtra(RecipeActivityConstants.EXTRA_RECIPE_ID, recipeId)
+                    returnIntent.putExtra(RecipeActivityConstants.EXTRA_RECIPE_STATE, recipeState.name)
+                    setResult(editResultCode, returnIntent)
+                    finish()
+                }
                 return true
             }
         }
@@ -173,10 +196,25 @@ class RecipeActivity : AppCompatActivity() {
     }
 
     override fun onBackPressed() {
-        val returnIntent = Intent()
-        returnIntent.putExtra(RecipeActivityConstants.EXTRA_RECIPE_ID, recipeId)
-        returnIntent.putExtra(RecipeActivityConstants.EXTRA_RECIPE_STATE, recipeState.name)
-        setResult(editResultCode, returnIntent)
-        super.onBackPressed()
+        if (!isRatingChanged) {
+            val returnIntent = Intent()
+            returnIntent.putExtra(RecipeActivityConstants.EXTRA_RECIPE_ID, recipeId)
+            returnIntent.putExtra(RecipeActivityConstants.EXTRA_RECIPE_STATE, recipeState.name)
+            setResult(editResultCode, returnIntent)
+            super.onBackPressed()
+        } else {
+            GlobalScope.launch(Dispatchers.IO) {
+                AppDatabase.getInstance(this@RecipeActivity)?.recipeDao()?.changeRatingById(
+                    ratingBar!!.rating, recipeId)
+            }.invokeOnCompletion {
+                editResultCode = Activity.RESULT_OK
+                recipeState = RecipeState.EDITED
+                val returnIntent = Intent()
+                returnIntent.putExtra(RecipeActivityConstants.EXTRA_RECIPE_ID, recipeId)
+                returnIntent.putExtra(RecipeActivityConstants.EXTRA_RECIPE_STATE, recipeState.name)
+                setResult(editResultCode, returnIntent)
+                GlobalScope.launch(Dispatchers.Main) { super.onBackPressed() }
+            }
+        }
     }
 }

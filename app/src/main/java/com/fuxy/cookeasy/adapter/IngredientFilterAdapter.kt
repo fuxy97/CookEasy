@@ -55,7 +55,7 @@ class IngredientFilterAdapter(/*private val context: Context,*/ val ingredients:
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val ingredient = ingredients[position]
         holder.ingredientTextView.text =
-            "${ingredient.ingredient?.ingredient} " +
+            "${ingredient.ingredient?.ingredient} - " +
                     "${if (ingredient.ingredientCountOption == IngredientCountOption.RANGE)
                         "${ingredient.fromIngredientCount} - " else "" } " +
                     "${ingredient.toIngredientCount} " +
