@@ -9,11 +9,9 @@ import android.widget.ImageView
 import android.widget.RatingBar
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.fuxy.cookeasy.EditRecipeActivity
 import com.fuxy.cookeasy.R
-import com.fuxy.cookeasy.RecipeActivity
-import com.fuxy.cookeasy.RecipeActivityConstants
-import com.fuxy.cookeasy.db.LocalTimeConverter
+import com.fuxy.cookeasy.activity.RecipeActivity
+import com.fuxy.cookeasy.activity.RecipeActivityConstants
 import com.fuxy.cookeasy.entity.Recipe
 import com.fuxy.cookeasy.fragment.RecipesFragment
 import org.threeten.bp.format.DateTimeFormatter

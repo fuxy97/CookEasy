@@ -9,7 +9,7 @@
     android:divider="@drawable/divider10dp"
     android:showDividers="middle"
     android:padding="20dp"
-    tools:context=".FilterActivity">
+    tools:context=".activity.FilterActivity">
 
     <TextView
         android:text="@string/cooking_time"

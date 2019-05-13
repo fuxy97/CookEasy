@@ -5,23 +5,30 @@ import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.preference.PreferenceManager
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.widget.NestedScrollView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.sqlite.db.SimpleSQLiteQuery
 import com.fuxy.cookeasy.*
+import com.fuxy.cookeasy.activity.FilterActivity
+import com.fuxy.cookeasy.activity.RecipeActivityConstants
+import com.fuxy.cookeasy.activity.RecipeState
 import com.fuxy.cookeasy.adapter.RecipeAdapter
 import com.fuxy.cookeasy.db.AppDatabase
 import com.fuxy.cookeasy.db.LocalTimeConverter
 import com.fuxy.cookeasy.entity.IngredientCountOption
 import com.fuxy.cookeasy.entity.ParcelableIngredientFilter
 import com.fuxy.cookeasy.entity.Recipe
+import com.fuxy.cookeasy.preference.PreferenceKeys
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
@@ -60,11 +67,20 @@ class RecipesFragment : Fragment() {
     private var orderColumn: String = "dish"
     private var order: String = "ASC"
     private var query: String? = null
-    var adapter: RecipeAdapter? = null
-    var recipes: MutableList<Recipe>? = null
+    private var adapter: RecipeAdapter? = null
+    private var recipes: MutableList<Recipe>? = null
+    private var recipesNestedScrollView: NestedScrollView? = null
+    private var searchOptionsButton: ImageButton? = null
+    private var popupMenu: PopupMenu? = null
+    private var recipesConstraintLayout: ConstraintLayout? = null
+    private var noConnectionLinearLayout: LinearLayout? = null
+    private var retryButton: Button? = null
+    private var timeout: Int? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_recipes, container, false)
+        timeout = PreferenceManager.getDefaultSharedPreferences(context)
+            ?.getString(PreferenceKeys.KEY_PREF_TIMEOUT, "0")?.toInt()
 
         recipeRecyclerView = view.findViewById(R.id.rv_recipe)
         progressBar = view.findViewById(R.id.pb_recipe_is_loaded)
@@ -72,45 +88,136 @@ class RecipesFragment : Fragment() {
         searchEditText = view.findViewById(R.id.et_search_bar)
         filterButton = view.findViewById(R.id.btn_filter)
         sortButton = view.findViewById(R.id.btn_sort)
+        recipesNestedScrollView = view.findViewById(R.id.nsv_recipes)
+        searchOptionsButton = view.findViewById(R.id.btn_search_options)
+        recipesConstraintLayout = view.findViewById(R.id.cl_recipes)
+        noConnectionLinearLayout = view.findViewById(R.id.ll_no_connection)
+        retryButton = view.findViewById(R.id.btn_retry)
         val layoutManager = GridLayoutManager(view.context, 2)
         recipeRecyclerView?.layoutManager = layoutManager
+        popupMenu = PopupMenu(context, searchOptionsButton)
 
-        GlobalScope.launch {
-            query = "SELECT * FROM recipe"
-            withContext(Dispatchers.IO) {
-                val recipeDao = AppDatabase.getInstance(view.context)!!.recipeDao()
-                recipes = recipeDao.rawQuery(
-                    SimpleSQLiteQuery("$query ORDER BY $orderColumn $order LIMIT ? OFFSET ?",
-                        arrayOf(10, 0))).toMutableList()
-
-                launch(Dispatchers.Main) {
-                    adapter = RecipeAdapter(this@RecipesFragment, recipes!!)
-                    recipeRecyclerView?.adapter = adapter
+        popupMenu?.inflate(R.menu.popupmenu_search_options)
+        popupMenu?.setOnMenuItemClickListener {
+            when (it.itemId) {
+                R.id.search_options_sort -> {
+                    sortOptionsDialog?.show()
+                    return@setOnMenuItemClickListener true
                 }
+                R.id.search_options_filters -> {
+                    val intent = Intent(view.context, FilterActivity::class.java)
+                    startActivityForResult(intent, FILTER_RECIPES_REQUEST)
+                    return@setOnMenuItemClickListener true
+                }
+                else -> return@setOnMenuItemClickListener false
             }
         }
 
-        recipeRecyclerView?.addOnScrollListener(object : EndlessRecyclerViewScrollListener(layoutManager) {
-            override fun fetchData(nextItem: Int) {
-                progressBar?.visibility = View.VISIBLE
+        GlobalScope.launch {
+            query = "SELECT * FROM recipe"
 
-                GlobalScope.launch {
-                    withContext(Dispatchers.IO) {
+            if (isNetworkConnected(context!!) && isOnline(timeout!!)) {
+                withContext(Dispatchers.IO) {
+                    val recipeDao = AppDatabase.getInstance(view.context)!!.recipeDao()
+                    recipes = recipeDao.rawQuery(
+                        SimpleSQLiteQuery(
+                            "$query ORDER BY $orderColumn $order LIMIT ? OFFSET ?",
+                            arrayOf(10, 0)
+                        )
+                    ).toMutableList()
+
+                    launch(Dispatchers.Main) {
+                        adapter = RecipeAdapter(this@RecipesFragment, recipes!!)
+                        recipeRecyclerView?.adapter = adapter
+                    }
+                }
+            } else {
+                recipesConstraintLayout?.visibility = View.GONE
+                noConnectionLinearLayout?.visibility = View.VISIBLE
+            }
+        }
+
+        retryButton?.setOnClickListener {
+            GlobalScope.launch {
+                withContext(Main) { retryButton?.isEnabled = false }
+
+                if (isNetworkConnected(context!!) && isOnline(timeout!!)) {
+                    withContext(Main) {
+                        recipesConstraintLayout?.visibility = View.VISIBLE
+                        noConnectionLinearLayout?.visibility = View.GONE
+                    }
+                    withContext(IO) {
+                        val recipeDao = AppDatabase.getInstance(view.context)!!.recipeDao()
+                        val newRecipes = recipeDao.rawQuery(
+                            SimpleSQLiteQuery(
+                                "$query ORDER BY $orderColumn $order LIMIT ? OFFSET ?",
+                                arrayOf(10, 0)
+                            )
+                        )
+
+                        if (recipes != null) {
+                            recipes?.clear()
+                            recipes?.addAll(newRecipes)
+                            withContext(Dispatchers.Main) {
+                                adapter?.notifyDataSetChanged()
+                            }
+                        } else {
+                            withContext(Main) {
+                                recipes = newRecipes.toMutableList()
+                                adapter = RecipeAdapter(this@RecipesFragment, recipes!!)
+                                recipeRecyclerView?.adapter = adapter
+                            }
+                        }
+                    }
+                } else {
+                    recipesConstraintLayout?.visibility = View.GONE
+                    noConnectionLinearLayout?.visibility = View.VISIBLE
+                }
+            }.invokeOnCompletion {
+                GlobalScope.launch(Main) { retryButton?.isEnabled = true }
+            }
+        }
+
+        recipeRecyclerView?.isNestedScrollingEnabled = false
+        var isSearchOptionsButtonShowed = false
+        recipesNestedScrollView?.setOnScrollChangeListener { v: NestedScrollView?, _: Int, scrollY: Int,
+                                                             _: Int, oldScrollY: Int ->
+            if (v?.getChildAt(v.childCount - 1) != null) {
+                if (!isSearchOptionsButtonShowed && scrollY > oldScrollY && scrollY >= sortButton!!.measuredHeight) {
+                    isSearchOptionsButtonShowed = true
+                    searchOptionsButton?.visibility = View.VISIBLE
+                }
+
+                if (isSearchOptionsButtonShowed && scrollY < oldScrollY && scrollY <= sortButton!!.measuredHeight) {
+                    isSearchOptionsButtonShowed = false
+                    searchOptionsButton?.visibility = View.GONE
+                }
+
+                if (scrollY > oldScrollY &&
+                    scrollY >= (v.getChildAt(0).measuredHeight - v.measuredHeight)) {
+                    progressBar?.visibility = View.VISIBLE
+                    val recipeBackupSize = recipes!!.size
+
+                    GlobalScope.launch(Dispatchers.IO) {
                         val recipe = AppDatabase.getInstance(context!!)?.recipeDao()
                         val newRecipes = recipe!!.rawQuery(SimpleSQLiteQuery(
-                            "$query ORDER BY $orderColumn $order LIMIT ? OFFSET ?", arrayOf(10, nextItem)))
-                        //recipes?.clear()
+                            "$query ORDER BY $orderColumn $order LIMIT ? OFFSET ?", arrayOf(10, recipes!!.size)))
+                            //recipes?.clear()
                         recipes?.addAll(newRecipes)
-                    }
-
-                    withContext(Dispatchers.Main) {
-                        adapter?.notifyItemRangeInserted(nextItem, 10)
-                        progressBar?.visibility = View.GONE
+                    }.invokeOnCompletion {
+                        if (recipeBackupSize < recipes!!.size)
+                            adapter?.notifyItemRangeInserted(recipeBackupSize,
+                                recipes!!.size - recipeBackupSize)
+                        GlobalScope.launch(Dispatchers.Main) { progressBar?.visibility = View.GONE }
                     }
                 }
             }
+        }
+        /*recipeRecyclerView?.addOnScrollListener(object : EndlessRecyclerViewScrollListener(layoutManager) {
+            override fun fetchData(nextItem: Int) {
+            }
 
-        })
+        })*/
 
         searchEditText?.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_SEARCH) {
@@ -230,21 +337,35 @@ class RecipesFragment : Fragment() {
             sortOptionsDialog?.show()
         }
 
+        searchOptionsButton?.setOnClickListener {
+            popupMenu?.show()
+        }
+
         return view
     }
 
     private suspend fun runQueryAndUpdateAdapter(offset: Int, pageSize: Int) {
-        withContext(Dispatchers.IO) {
-            val recipe = AppDatabase.getInstance(context!!)?.recipeDao()
-            val newRecipes = recipe!!.rawQuery(
-                SimpleSQLiteQuery("$query ORDER BY $orderColumn $order LIMIT ? OFFSET ?",
-                arrayOf(pageSize, offset)))
-            recipes?.clear()
-            recipes?.addAll(newRecipes)
-        }
+        if (isNetworkConnected(context!!) && isOnline(timeout!!)) {
+            withContext(Dispatchers.IO) {
+                val recipe = AppDatabase.getInstance(context!!)?.recipeDao()
+                val newRecipes = recipe!!.rawQuery(
+                    SimpleSQLiteQuery(
+                        "$query ORDER BY $orderColumn $order LIMIT ? OFFSET ?",
+                        arrayOf(pageSize, offset)
+                    )
+                )
+                recipes?.clear()
+                recipes?.addAll(newRecipes)
+            }
 
-        withContext(Dispatchers.Main) {
-            adapter?.notifyDataSetChanged()
+            withContext(Dispatchers.Main) {
+                adapter?.notifyDataSetChanged()
+            }
+        } else {
+            withContext(Dispatchers.Main) {
+                recipesConstraintLayout?.visibility = View.GONE
+                noConnectionLinearLayout?.visibility = View.VISIBLE
+            }
         }
     }
 

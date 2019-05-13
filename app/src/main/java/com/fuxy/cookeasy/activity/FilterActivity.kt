@@ -1,7 +1,6 @@
-package com.fuxy.cookeasy
+package com.fuxy.cookeasy.activity
 
 import android.app.Activity
-import android.app.Dialog
 import android.app.TimePickerDialog
 import android.content.DialogInterface
 import android.content.Intent
@@ -15,6 +14,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.fuxy.cookeasy.*
 import com.fuxy.cookeasy.adapter.IngredientFilterAdapter
 import com.fuxy.cookeasy.entity.IngredientFilter
 import com.fuxy.cookeasy.fragment.RecipesFragment
@@ -112,7 +112,9 @@ class FilterActivity : AppCompatActivity(), AddIngredientDialogFragment.AddIngre
         }
 
         addIngredientButton?.setOnClickListener {
-            addIngredientDialog?.show(supportFragmentManager, FilterActvityConstants.ADD_INGREDIENT_DIALOG_TAG)
+            addIngredientDialog?.show(supportFragmentManager,
+                FilterActvityConstants.ADD_INGREDIENT_DIALOG_TAG
+            )
         }
 
         applyButton?.setOnClickListener {

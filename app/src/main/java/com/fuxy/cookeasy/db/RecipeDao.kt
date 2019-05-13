@@ -43,8 +43,8 @@ interface RecipeDao {
     @Query("UPDATE recipe SET rating = :rating WHERE id = :id")
     fun changeRatingById(rating: Float, id: Int): Int
 
-    @Query("INSERT INTO recipe (dish, cooking_time, description, bucket_image_absolute_path) " +
-            "VALUES(:dish, :cookingTime, :description, :bucketImagePath)")
+    @Query("INSERT INTO recipe (dish, cooking_time, description, bucket_image_absolute_path, rating) " +
+            "VALUES(:dish, :cookingTime, :description, :bucketImagePath, 0)")
     fun insert(dish: String, cookingTime: LocalTime, description: String, bucketImagePath: String): Long
 
     @Query("DELETE FROM recipe WHERE id = :id")
