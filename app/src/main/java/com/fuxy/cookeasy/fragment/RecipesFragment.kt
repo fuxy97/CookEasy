@@ -76,6 +76,7 @@ class RecipesFragment : Fragment() {
     private var noConnectionLinearLayout: LinearLayout? = null
     private var retryButton: Button? = null
     private var timeout: Int? = null
+    private var deviation: Double? = null
     private var filterBundle: Bundle? = null
     private var selectedSortOption: Int = 0
 
@@ -83,6 +84,8 @@ class RecipesFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_recipes, container, false)
         timeout = PreferenceManager.getDefaultSharedPreferences(context)
             ?.getString(PreferenceKeys.KEY_PREF_TIMEOUT, "0")?.toInt()
+        deviation = PreferenceManager.getDefaultSharedPreferences(context)
+            ?.getString(PreferenceKeys.KEY_PREF_DEVIATION, "0")?.toInt()?.div(100.0)
 
         recipeRecyclerView = view.findViewById(R.id.rv_recipe)
         progressBar = view.findViewById(R.id.pb_recipe_is_loaded)
@@ -408,9 +411,9 @@ class RecipesFragment : Fragment() {
                                 }
                                 IngredientCountOption.APPROXIMATELY -> {
                                     sb.append("ingredient_count BETWEEN ",
-                                        (r.toIngredientCount - r.toIngredientCount * 0.35).toInt(),
+                                        (r.toIngredientCount - r.toIngredientCount * deviation!!).toInt(),
                                         " AND ",
-                                        ceil(r.toIngredientCount + r.toIngredientCount * 0.35).toInt(),
+                                        ceil(r.toIngredientCount + r.toIngredientCount * deviation!!).toInt(),
                                         " AND "
                                     )
                                 }
