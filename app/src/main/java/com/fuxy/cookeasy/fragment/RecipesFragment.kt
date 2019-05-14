@@ -66,7 +66,7 @@ class RecipesFragment : Fragment() {
     private var sortOptionsDialog: AlertDialog? = null
     private var orderColumn: String = "dish"
     private var order: String = "ASC"
-    private var query: String? = null
+    private var query: String = "SELECT * FROM recipe"
     private var adapter: RecipeAdapter? = null
     private var recipes: MutableList<Recipe>? = null
     private var recipesNestedScrollView: NestedScrollView? = null
@@ -76,6 +76,8 @@ class RecipesFragment : Fragment() {
     private var noConnectionLinearLayout: LinearLayout? = null
     private var retryButton: Button? = null
     private var timeout: Int? = null
+    private var filterBundle: Bundle? = null
+    private var selectedSortOption: Int = 0
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_recipes, container, false)
@@ -114,8 +116,6 @@ class RecipesFragment : Fragment() {
         }
 
         GlobalScope.launch {
-            query = "SELECT * FROM recipe"
-
             if (isNetworkConnected(context!!) && isOnline(timeout!!)) {
                 withContext(Dispatchers.IO) {
                     val recipeDao = AppDatabase.getInstance(view.context)!!.recipeDao()
@@ -291,12 +291,16 @@ class RecipesFragment : Fragment() {
 
         filterButton?.setOnClickListener {
             val intent = Intent(view.context, FilterActivity::class.java)
+            if (filterBundle != null) {
+                intent.putExtras(filterBundle!!)
+            }
             startActivityForResult(intent, FILTER_RECIPES_REQUEST)
         }
 
         sortOptionsDialog = AlertDialog.Builder(view.context)
             .setTitle(R.string.sort_by)
-            .setSingleChoiceItems(R.array.sort_options, 0) { dialog, which ->
+            .setSingleChoiceItems(R.array.sort_options, selectedSortOption) { dialog, which ->
+                selectedSortOption = which
                 when(which) {
                     0 -> {
                         orderColumn = "dish"
@@ -373,6 +377,7 @@ class RecipesFragment : Fragment() {
         when (requestCode) {
             FILTER_RECIPES_REQUEST -> {
                 if (resultCode == RESULT_OK) {
+                    filterBundle = data?.extras
                     val timeFromHour = data?.getIntExtra(EXTRA_FILTER_RESULT_FROM_TIME_HOUR, -1)
                     val timeFromMinute = data?.getIntExtra(EXTRA_FILTER_RESULT_FROM_TIME_MINUTE, -1)
                     val timeToHour = data?.getIntExtra(EXTRA_FILTER_RESULT_TO_TIME_HOUR, -1)
@@ -423,17 +428,35 @@ class RecipesFragment : Fragment() {
                                 sb.append("unit_id = ", r.unitId)
                         }
 
-                        query = "SELECT recipe.* FROM " +
-                                "(SELECT recipe_id, COUNT(*) AS c FROM recipe_ingredient GROUP BY recipe_id) as l " +
-                                "INNER JOIN (SELECT recipe_id, COUNT(*) AS c FROM recipe_ingredient " +
-                                "WHERE $sb GROUP BY recipe_id) AS r ON l.recipe_id = r.recipe_id " +
-                                "INNER JOIN recipe ON l.recipe_id = recipe.id " +
-                                "WHERE l.c = r.c" +
-                                if (timeFrom != null) " AND time(recipe.cooking_time) BETWEEN " +
-                                        "time('${LocalTimeConverter.fromLocalTime(timeFrom)}')" else {""} +
-                                if (timeTo != null) {" AND " + if (timeFrom == null) "time(recipe.cooking_time) = "
-                                else {""} +
-                                        "time('${LocalTimeConverter.fromLocalTime(timeTo)}')"} else ""
+                        if (sb.isNotEmpty()) {
+                            query = "SELECT recipe.* FROM " +
+                                    "(SELECT recipe_id, COUNT(*) AS c FROM recipe_ingredient GROUP BY recipe_id) as l " +
+                                    "INNER JOIN (SELECT recipe_id, COUNT(*) AS c FROM recipe_ingredient " +
+                                    "WHERE $sb GROUP BY recipe_id) AS r ON l.recipe_id = r.recipe_id " +
+                                    "INNER JOIN recipe ON l.recipe_id = recipe.id " +
+                                    "WHERE l.c = r.c" +
+                                    if (timeFrom != null) " AND time(recipe.cooking_time) BETWEEN " +
+                                            "time('${LocalTimeConverter.fromLocalTime(timeFrom)}')" else {
+                                        ""
+                                    } +
+                                    if (timeTo != null) {
+                                        " AND " + if (timeFrom == null) "time(recipe.cooking_time) = "
+                                        else {
+                                            ""
+                                        } +
+                                                "time('${LocalTimeConverter.fromLocalTime(timeTo)}')"
+                                    } else ""
+                        } else {
+                            query = "SELECT * FROM recipe " +
+                                    if (timeFrom != null) " WHERE time(recipe.cooking_time) BETWEEN " +
+                                            "time('${LocalTimeConverter.fromLocalTime(timeFrom)}')" else {
+                                        ""
+                                    } +
+                                    if (timeTo != null) {
+                                        if (timeFrom == null) {" WHERE time(recipe.cooking_time) = "} else {" AND "} +
+                                                "time('${LocalTimeConverter.fromLocalTime(timeTo)}')"
+                                    } else ""
+                        }
 
                         GlobalScope.launch {
                             runQueryAndUpdateAdapter(0, 10)

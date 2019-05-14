@@ -45,17 +45,20 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
 
     private fun loadFragment(fragment: Fragment?, name: String?): Boolean {
         if (fragment != null) {
-            val transaction = supportFragmentManager
-                .beginTransaction()
-                .replace(R.id.fl_fragment_container, fragment)
-
+            val isPopped = supportFragmentManager.popBackStackImmediate()
             val count = supportFragmentManager.backStackEntryCount
 
-            if (name != RecipesFragment.FRAGMENT_NAME) {
-                transaction.addToBackStack(name)
-            }
+            if (!isPopped) {
+                val transaction = supportFragmentManager
+                    .beginTransaction()
+                    .replace(R.id.fl_fragment_container, fragment)
 
-            transaction.commit()
+                if (name != RecipesFragment.FRAGMENT_NAME) {
+                    transaction.addToBackStack(name)
+                }
+
+                transaction.commit()
+            }
 
             supportFragmentManager.addOnBackStackChangedListener(object : FragmentManager.OnBackStackChangedListener {
                 override fun onBackStackChanged() {

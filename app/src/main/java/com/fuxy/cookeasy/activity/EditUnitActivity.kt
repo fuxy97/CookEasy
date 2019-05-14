@@ -80,6 +80,7 @@ class EditUnitActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_edit_unit)
         title = resources.getString(R.string.edit_unit_activity_title)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         val deleteErrorDialog = AlertDialog.Builder(this)
             .setTitle(R.string.error)
@@ -199,6 +200,10 @@ class EditUnitActivity : AppCompatActivity() {
         return when (item?.itemId) {
             R.id.edit_unit_add -> {
                 showDialogFragment(addUnitDialog!!, ADD_UNIT_DIALOG_TAG)
+                true
+            }
+            android.R.id.home -> {
+                finish()
                 true
             }
             else -> super.onOptionsItemSelected(item)

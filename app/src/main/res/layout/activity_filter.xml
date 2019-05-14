@@ -12,6 +12,15 @@
     tools:context=".activity.FilterActivity">
 
     <TextView
+            android:id="@+id/tv_error_message"
+            android:textColor="@android:color/holo_red_dark"
+            android:text="@string/range_time_error_message"
+            android:layout_marginBottom="20dp"
+            android:visibility="gone"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+    <TextView
         android:text="@string/cooking_time"
         android:textColor="@android:color/black"
         android:textSize="16sp"

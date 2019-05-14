@@ -31,6 +31,7 @@ class PositiveNumberPreferenceDialog : EditTextPreferenceDialogFragmentCompat() 
                 return@InputFilter ""
             return@InputFilter null
         })
+        editText?.setSelection(editText.text.length)
     }
 
 }

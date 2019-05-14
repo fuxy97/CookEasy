@@ -79,6 +79,7 @@ class EditIngredientActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_edit_ingredient)
         title = resources.getString(R.string.ingredients)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         val deleteErrorDialog = AlertDialog.Builder(this)
             .setTitle(R.string.error)
@@ -115,7 +116,8 @@ class EditIngredientActivity : AppCompatActivity() {
 
 
         GlobalScope.launch(Dispatchers.IO) {
-            val ingredientDao = AppDatabase.getInstance(this@EditIngredientActivity)?.ingredientDao()
+            val ingredientDao = AppDatabase.getInstance(this@EditIngredientActivity)
+                ?.ingredientDao()
             if (ingredientDao != null) {
                 val ingredients =
                     RecordList(ingredientDao.getAll().map { Pair(it.id ?: 0, it.ingredient) }.toMutableList())
@@ -200,6 +202,10 @@ class EditIngredientActivity : AppCompatActivity() {
         return when (item?.itemId) {
             R.id.edit_unit_add -> {
                 showDialogFragment(addIngredientDialog!!, ADD_INGREDIENT_DIALOG_TAG)
+                true
+            }
+            android.R.id.home -> {
+                finish()
                 true
             }
             else -> super.onOptionsItemSelected(item)

@@ -39,6 +39,7 @@ class PercentagePreferenceDialog : EditTextPreferenceDialogFragmentCompat() {
             } catch (nfe: NumberFormatException) {}
             return@InputFilter ""
         })
+        editText?.setSelection(editText.text.length)
     }
 
 }

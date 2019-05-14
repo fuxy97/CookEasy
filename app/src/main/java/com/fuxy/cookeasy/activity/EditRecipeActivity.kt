@@ -176,7 +176,7 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
 
         addIngredientButton?.setOnClickListener {
             addIngredientDialog?.show(supportFragmentManager,
-                FilterActvityConstants.ADD_INGREDIENT_DIALOG_TAG
+                FilterActivityConstants.ADD_INGREDIENT_DIALOG_TAG
             )
         }
 

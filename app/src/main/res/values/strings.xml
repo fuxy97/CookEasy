@@ -91,6 +91,7 @@
     </string>
     <string name="enter_ingredient">Введите ингредиент…</string>
     <string name="enter_ingredient_error">Введите ингредиент</string>
+    <string name="range_time_error_message">Вы должны выбрать начальное время в диапазоне</string>
 
     <string-array name="sort_options">
         <item>Названию блюда (возрастание)</item>
