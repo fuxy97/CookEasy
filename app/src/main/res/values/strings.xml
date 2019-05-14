@@ -77,6 +77,20 @@
     </string>
     <string name="title_ingredient_preference">Ингредиенты</string>
     <string name="summary_ingredient_preference">Просмотр, добавление, редактирование и удаление ингредиентов</string>
+    <string name="search">Поиск</string>
+    <string name="edit_unit_activity_title">Единицы измерения</string>
+    <string name="edit_unit_search_hint">Введите единицу…</string>
+    <string name="edit_record_error_message">Ошибка! Вы должны заполнить поле.</string>
+    <string name="unit_delete_confirmation">Вы уверены, что хотите удалить эту единицу измерения?</string>
+    <string name="ingredient_delete_confirmation">Вы уверены, что хотите удалить этот ингредиент?</string>
+    <string name="enter_unit">Введите единицу измерения…</string>
+    <string name="enter_unit_error">Введите единицу измерения</string>
+    <string name="delete_unit_error_message">Невозможно удалить единицу измерения, т.к. она уже используется в рецептах.
+    </string>
+    <string name="delete_ingredient_error_message">Невозможно удалить ингредиент, т.к. он уже используется в рецептах.
+    </string>
+    <string name="enter_ingredient">Введите ингредиент…</string>
+    <string name="enter_ingredient_error">Введите ингредиент</string>
 
     <string-array name="sort_options">
         <item>Названию блюда (возрастание)</item>

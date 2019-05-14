@@ -112,16 +112,12 @@ class AddIngredientDialogFragment : DialogFragment() {
             }
         }
 
-        val dialog = AlertDialog.Builder(context!!)
+        return AlertDialog.Builder(context!!)
             .setTitle(R.string.add_ingredient)
             .setView(view)
-            .setPositiveButton(R.string.ok) { _: DialogInterface, _: Int ->
-            }
-            .setNegativeButton(R.string.cancel) { _: DialogInterface, _: Int ->
-            }
+            .setPositiveButton(R.string.ok) { _: DialogInterface, _: Int -> }
+            .setNegativeButton(R.string.cancel) { _: DialogInterface, _: Int -> }
             .create()
-
-        return dialog
     }
 
     override fun onResume() {

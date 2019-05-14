@@ -15,8 +15,7 @@
             android:theme="@style/Theme.CookEasy.App">
         <activity android:name=".activity.EditIngredientActivity">
         </activity>
-        <activity android:name=".activity.EditUnitActivity">
-        </activity>
+        <activity android:name=".activity.EditUnitActivity" />
         <activity
                 android:name=".activity.MainActivity"
                 android:theme="@style/Theme.CookEasy.App.MainActivity"
