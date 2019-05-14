@@ -1,4 +1,4 @@
-package com.fuxy.cookeasy
+package com.fuxy.cookeasy.dialogfragment
 
 import android.app.Activity
 import android.app.Dialog
@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.*
 import androidx.fragment.app.DialogFragment
+import com.fuxy.cookeasy.R
 import com.fuxy.cookeasy.db.AppDatabase
 import com.fuxy.cookeasy.entity.Ingredient
 import com.fuxy.cookeasy.entity.IngredientCountOption
@@ -37,7 +38,8 @@ class AddIngredientDialogFragment : DialogFragment() {
     private var toIngredientCountEditText: EditText? = null
     private var toIngredientCountTextInputLayout: TextInputLayout? = null
     private var ingredientCountOptionSpinner: Spinner? = null
-    private var mode: AddIngredientDialogMode = AddIngredientDialogMode.DEFAULT
+    private var mode: AddIngredientDialogMode =
+        AddIngredientDialogMode.DEFAULT
     private var ingredientCountOption: IngredientCountOption = IngredientCountOption.EXACTLY
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {

@@ -12,8 +12,8 @@ import androidx.fragment.app.DialogFragment
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.fuxy.cookeasy.EditRecordDialogFragment
-import com.fuxy.cookeasy.EditRecordDialogFragmentConstants
+import com.fuxy.cookeasy.dialogfragment.EditRecordDialogFragment
+import com.fuxy.cookeasy.dialogfragment.EditRecordDialogFragmentConstants
 import com.fuxy.cookeasy.R
 import com.fuxy.cookeasy.adapter.EditDictionaryAdapter
 import com.fuxy.cookeasy.adapter.RecordList
@@ -136,21 +136,27 @@ class EditUnitActivity : AppCompatActivity() {
 
                     addUnitDialog = AddDialogFragment(adapter!!)
                     val addUnitDialogArgs = Bundle()
-                    addUnitDialogArgs.putString(EditRecordDialogFragmentConstants.ARGUMENT_TITLE,
+                    addUnitDialogArgs.putString(
+                        EditRecordDialogFragmentConstants.ARGUMENT_TITLE,
                         resources.getString(R.string.add))
-                    addUnitDialogArgs.putString(EditRecordDialogFragmentConstants.ARGUMENT_HINT,
+                    addUnitDialogArgs.putString(
+                        EditRecordDialogFragmentConstants.ARGUMENT_HINT,
                         resources.getString(R.string.enter_unit))
-                    addUnitDialogArgs.putString(EditRecordDialogFragmentConstants.ARGUMENT_ERROR,
+                    addUnitDialogArgs.putString(
+                        EditRecordDialogFragmentConstants.ARGUMENT_ERROR,
                         resources.getString(R.string.enter_unit_error))
                     addUnitDialog?.arguments = addUnitDialogArgs
 
                     updateUnitDialog = UpdateUnitDialog(adapter!!)
                     val updateUnitDialogArgs = Bundle()
-                    updateUnitDialogArgs.putString(EditRecordDialogFragmentConstants.ARGUMENT_TITLE,
+                    updateUnitDialogArgs.putString(
+                        EditRecordDialogFragmentConstants.ARGUMENT_TITLE,
                         resources.getString(R.string.edit))
-                    updateUnitDialogArgs.putString(EditRecordDialogFragmentConstants.ARGUMENT_HINT,
+                    updateUnitDialogArgs.putString(
+                        EditRecordDialogFragmentConstants.ARGUMENT_HINT,
                         resources.getString(R.string.enter_unit))
-                    updateUnitDialogArgs.putString(EditRecordDialogFragmentConstants.ARGUMENT_ERROR,
+                    updateUnitDialogArgs.putString(
+                        EditRecordDialogFragmentConstants.ARGUMENT_ERROR,
                         resources.getString(R.string.enter_unit_error))
                     updateUnitDialog?.arguments = updateUnitDialogArgs
                 }

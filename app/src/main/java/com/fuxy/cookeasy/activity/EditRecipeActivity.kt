@@ -19,6 +19,7 @@ import com.fuxy.cookeasy.*
 import com.fuxy.cookeasy.adapter.EditStepAdapter
 import com.fuxy.cookeasy.adapter.IngredientFilterAdapter
 import com.fuxy.cookeasy.db.AppDatabase
+import com.fuxy.cookeasy.dialogfragment.AddIngredientDialogFragment
 import com.fuxy.cookeasy.entity.EditStep
 import com.fuxy.cookeasy.entity.IngredientFilter
 import com.fuxy.cookeasy.entity.RecipeIngredient

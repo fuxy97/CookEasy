@@ -12,14 +12,13 @@ import androidx.fragment.app.DialogFragment
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.fuxy.cookeasy.EditRecordDialogFragment
-import com.fuxy.cookeasy.EditRecordDialogFragmentConstants
+import com.fuxy.cookeasy.dialogfragment.EditRecordDialogFragment
+import com.fuxy.cookeasy.dialogfragment.EditRecordDialogFragmentConstants
 import com.fuxy.cookeasy.R
 import com.fuxy.cookeasy.adapter.EditDictionaryAdapter
 import com.fuxy.cookeasy.adapter.RecordList
 import com.fuxy.cookeasy.db.AppDatabase
 import com.fuxy.cookeasy.entity.Ingredient
-import com.fuxy.cookeasy.entity.Unit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.cancel

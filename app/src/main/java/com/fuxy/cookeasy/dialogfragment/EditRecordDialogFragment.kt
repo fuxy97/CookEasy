@@ -1,4 +1,4 @@
-package com.fuxy.cookeasy
+package com.fuxy.cookeasy.dialogfragment
 
 import android.app.Dialog
 import android.content.DialogInterface
@@ -8,6 +8,7 @@ import android.widget.EditText
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
+import com.fuxy.cookeasy.R
 import com.google.android.material.textfield.TextInputLayout
 
 object EditRecordDialogFragmentConstants {
