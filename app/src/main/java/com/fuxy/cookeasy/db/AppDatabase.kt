@@ -4,10 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import androidx.room.*
 import androidx.sqlite.db.SupportSQLiteDatabase
-import com.fuxy.cookeasy.entity.Ingredient
-import com.fuxy.cookeasy.entity.Recipe
-import com.fuxy.cookeasy.entity.RecipeIngredient
-import com.fuxy.cookeasy.entity.Step
+import com.fuxy.cookeasy.entity.*
 import com.fuxy.cookeasy.s3.getImageObjectFromBucket
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.GlobalScope
@@ -17,13 +14,14 @@ import org.threeten.bp.LocalTime
 
 @TypeConverters(BucketImageObjectConverter::class, LocalTimeConverter::class)
 @Database(entities = [Recipe::class, Ingredient::class, RecipeIngredient::class, Step::class,
-    com.fuxy.cookeasy.entity.Unit::class], version = 1)
+    com.fuxy.cookeasy.entity.Unit::class, DishType::class], version = 1)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun recipeDao(): RecipeDao
     abstract fun stepDao(): StepDao
     abstract fun ingredientDao(): IngredientDao
     abstract fun unitDao(): UnitDao
     abstract fun recipeIngredientDao(): RecipeIngredientDao
+    abstract fun dishTypeDao(): DishTypeDao
 
     companion object {
         @SuppressLint("StaticFieldLeak")
@@ -52,23 +50,39 @@ abstract class AppDatabase : RoomDatabase() {
 
                         GlobalScope.launch {
                             withContext(IO) {
+                                val dishTypeIds = getInstance(context)!!.dishTypeDao()
+                                    .insert(
+                                        DishType(dishType = "Закуска"),
+                                        DishType(dishType = "Салат"),
+                                        DishType(dishType = "Первое блюдо"),
+                                        DishType(dishType = "Второе блюдо"),
+                                        DishType(dishType = "Десерт"),
+                                        DishType(dishType = "Напиток")
+                                    )
+
                                 val recipeIds = getInstance(context)!!.recipeDao()
                                     .insert(
                                         Recipe(
                                             dish = "Салат \"На скорую руку\"",
                                             cookingTime = LocalTime.of(0, 10),
                                             bucketImage = getImageObjectFromBucket(context, "salat-na-skoruyu-ruku.jpg"),
-                                            description = "Название говорит само за себя. Очень вкусный салат и готовится очень быстро. Можно приготивать к любому столу."
+                                            description = "Название говорит само за себя. Очень вкусный салат и готовится очень быстро. Можно приготивать к любому столу.",
+                                            dishTypeId = dishTypeIds[1].toInt(),
+                                            servings = 4,
+                                            calories = 500
                                         ), Recipe(
                                             dish = "Салат \"Маскарад\"",
                                             cookingTime = LocalTime.of(0,25),
                                             bucketImage = getImageObjectFromBucket(context, "salat-maskarad.jpg"),
-                                            description = "Самый праздничный салат для праздничного стола. Салат \"Маскарад\" не останется без внимания ваших гостей и станет ярким гостем на вашем праздничном столе."
+                                            description = "Самый праздничный салат для праздничного стола. Салат \"Маскарад\" не останется без внимания ваших гостей и станет ярким гостем на вашем праздничном столе.",
+                                            dishTypeId = dishTypeIds[1].toInt(),
+                                            servings = 4,
+                                            calories = 650
                                         ))
 
                                 val unitIds = getInstance(context)!!.unitDao()
-                                    .insert(com.fuxy.cookeasy.entity.Unit(unit = "г."),
-                                        com.fuxy.cookeasy.entity.Unit(unit = "ст. л."))
+                                    .insert(Unit(unit = "г."),
+                                        Unit(unit = "ст. л."))
 
                                 val ingredientIds = getInstance(context)!!.ingredientDao()
                                     .insert(Ingredient(ingredient = "ветчина"),

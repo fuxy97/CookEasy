@@ -8,4 +8,8 @@ import androidx.room.PrimaryKey
 data class DishType (
     @PrimaryKey(autoGenerate = true) val id: Int? = null,
     @ColumnInfo(name = "dish_type") val dishType: String
-)
+) {
+    override fun toString(): String {
+        return dishType
+    }
+}

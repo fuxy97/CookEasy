@@ -16,13 +16,11 @@ import com.fuxy.cookeasy.adapter.EditStepAdapter
 import com.fuxy.cookeasy.adapter.IngredientFilterAdapter
 import com.fuxy.cookeasy.db.AppDatabase
 import com.fuxy.cookeasy.db.LocalTimeConverter
-import com.fuxy.cookeasy.entity.EditStep
-import com.fuxy.cookeasy.entity.IngredientFilter
-import com.fuxy.cookeasy.entity.Recipe
-import com.fuxy.cookeasy.entity.RecipeIngredient
+import com.fuxy.cookeasy.entity.*
 import com.fuxy.cookeasy.s3.BucketImageObject
 import com.fuxy.cookeasy.s3.putObjectToBucket
 import com.google.android.material.textfield.TextInputLayout
+import com.toptoche.searchablespinnerlibrary.SearchableSpinner
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.GlobalScope
@@ -78,6 +76,11 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
     private var errorMessageTextView: TextView? = null
     private var isDishImageSetted: Boolean = false
     private var descriptionTextInputLayout: TextInputLayout? = null
+    private var servingsTextInputLayout: TextInputLayout? = null
+    private var servingsEditText: EditText? = null
+    private var caloriesTextInputLayout: TextInputLayout? = null
+    private var caloriesEditText: EditText? = null
+    private var dishTypeSearchableSpinner: SearchableSpinner? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -104,6 +107,14 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
         applyButton = findViewById(R.id.btn_apply)
         errorMessageTextView = findViewById(R.id.tv_error_message)
         addIngredientDialog = AddIngredientDialogFragment()
+        servingsTextInputLayout = findViewById(R.id.til_servings)
+        servingsEditText = findViewById(R.id.et_servings)
+        caloriesTextInputLayout = findViewById(R.id.til_calories)
+        caloriesEditText = findViewById(R.id.et_calories)
+        dishTypeSearchableSpinner = findViewById(R.id.sp_dish_type)
+
+        dishTypeSearchableSpinner?.setTitle(resources.getString(R.string.select_dish_type_title))
+        dishTypeSearchableSpinner?.setPositiveButton(resources.getString(R.string.ok))
 
         uploadImageLinearLayout?.setOnClickListener {
             startChoosePhotoActivity()
@@ -312,6 +323,7 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
                         }
 
                         val recipeDao = AppDatabase.getInstance(this@EditRecipeActivity)?.recipeDao()
+                        val dishTypeId = (dishTypeSearchableSpinner?.selectedItem as DishType).id
                         if (dishImageUri != null) {
                             val bucketPath = putImageToBucketByUri(dishImageUri!!)
                             recipeDao?.updateById(
@@ -319,14 +331,20 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
                                 dish = dishEditText?.text.toString(),
                                 description = descriptionEditText?.text.toString(),
                                 cookingTime = cookingLocalTime!!,
-                                bucketImagePath = bucketPath
+                                bucketImagePath = bucketPath,
+                                servings = servingsEditText!!.text.toString().toInt(),
+                                calories = caloriesEditText!!.text.toString().toInt(),
+                                dishTypeId = dishTypeId!!
                             )
                         } else {
                             recipeDao?.updateById(
                                 id = recipeId!!,
                                 dish = dishEditText?.text.toString(),
                                 description = descriptionEditText?.text.toString(),
-                                cookingTime = cookingLocalTime!!
+                                cookingTime = cookingLocalTime!!,
+                                servings = servingsEditText!!.text.toString().toInt(),
+                                calories = caloriesEditText!!.text.toString().toInt(),
+                                dishTypeId = dishTypeId!!
                             )
                         }
                     }.invokeOnCompletion {
@@ -340,11 +358,15 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
                 GlobalScope.launch(IO) {
                     val recipeDao = AppDatabase.getInstance(this@EditRecipeActivity)?.recipeDao()
                     val bucketPath = putImageToBucketByUri(dishImageUri!!)
+                    val dishTypeId = (dishTypeSearchableSpinner?.selectedItem as DishType).id
                     recipeId = recipeDao?.insert(
                         dish = dishEditText?.text.toString(),
                         description = descriptionEditText?.text.toString(),
                         cookingTime = cookingLocalTime!!,
-                        bucketImagePath = bucketPath
+                        bucketImagePath = bucketPath,
+                        servings = servingsEditText!!.text.toString().toInt(),
+                        calories = caloriesEditText!!.text.toString().toInt(),
+                        dishTypeId = dishTypeId!!
                     )?.toInt()
 
                     val ingredientDao = AppDatabase.getInstance(this@EditRecipeActivity)?.recipeIngredientDao()
@@ -392,11 +414,13 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
                     val stepDao = AppDatabase.getInstance(this@EditRecipeActivity)?.stepDao()
                     val ingredientDao = AppDatabase.getInstance(this@EditRecipeActivity)?.ingredientDao()
                     val unitDao = AppDatabase.getInstance(this@EditRecipeActivity)?.unitDao()
+                    val dishTypeDao = AppDatabase.getInstance(this@EditRecipeActivity)?.dishTypeDao()
 
                     val recipe = recipeDao?.getById(recipeId!!)
                     ingredientsBackup = recipeIngredientDao?.getByRecipeId(recipeId!!)
                     val steps = stepDao?.getByRecipeId(recipeId!!)
                     stepCountBackup = steps?.size
+                    val dishTypes = dishTypeDao?.getAll()
 
                     if (ingredientsBackup != null) {
                         for (i in ingredientsBackup!!) {
@@ -435,8 +459,20 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
                         else
                             cookingTimeTextView?.text = minuteTimeFormatter.format(cookingLocalTime)
 
+                        servingsEditText?.setText(recipe?.servings.toString())
+                        caloriesEditText?.setText(recipe?.calories.toString())
+
                         ingredientAdapter?.notifyDataSetChanged()
                         stepAdapter.notifyDataSetChanged()
+
+                        val dishTypeAdapter =
+                            ArrayAdapter(this@EditRecipeActivity, android.R.layout.simple_list_item_1, dishTypes!!)
+                        dishTypeSearchableSpinner?.adapter = dishTypeAdapter
+
+                        for (i in 0 until dishTypeAdapter.count) {
+                            if (dishTypeAdapter.getItem(i)!!.id == recipe!!.dishTypeId)
+                                dishTypeSearchableSpinner?.setSelection(i)
+                        }
                     }
                 }
             }
