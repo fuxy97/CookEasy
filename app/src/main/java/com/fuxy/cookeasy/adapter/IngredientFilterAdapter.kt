@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.fuxy.cookeasy.R
 import com.fuxy.cookeasy.db.AppDatabase
 import com.fuxy.cookeasy.entity.Ingredient
+import com.fuxy.cookeasy.entity.IngredientCountOption
 import com.fuxy.cookeasy.entity.IngredientFilter
 import com.fuxy.cookeasy.entity.Unit
 import com.toptoche.searchablespinnerlibrary.SearchableSpinner
@@ -19,7 +20,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
-class IngredientFilterAdapter(private val context: Context, val ingredients: MutableList<IngredientFilter>)
+class IngredientFilterAdapter(/*private val context: Context,*/ val ingredients: MutableList<IngredientFilter>)
     : RecyclerView.Adapter<IngredientFilterAdapter.ViewHolder>() {
 
 /*    private var ingredientAdapter: ArrayAdapter<Ingredient>? = null
@@ -54,7 +55,13 @@ class IngredientFilterAdapter(private val context: Context, val ingredients: Mut
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val ingredient = ingredients[position]
         holder.ingredientTextView.text =
-            "${ingredient.ingredient?.ingredient} ${ingredient.ingredientCount} ${ingredient.unit?.unit}"
+            "${ingredient.ingredient?.ingredient} - " +
+                    "${if (ingredient.ingredientCountOption == IngredientCountOption.RANGE)
+                        "${ingredient.fromIngredientCount} - " else "" } " +
+                    "${ingredient.toIngredientCount} " +
+                    "${if (ingredient.ingredientCountOption == IngredientCountOption.APPROXIMATELY)
+                        "(приблизительно)" else ""} " +
+                    "${ingredient.unit?.unit}"
 
 /*        if (ingredient.unit != null) {
             for (i in 0 until unitAdapter?.count!!) {

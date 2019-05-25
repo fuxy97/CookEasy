@@ -1,34 +1,46 @@
-package com.fuxy.cookeasy
+package com.fuxy.cookeasy.activity
 
 import android.app.Activity
 import android.app.TimePickerDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.preference.PreferenceManager
 import android.view.MenuItem
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.coordinatorlayout.widget.CoordinatorLayout
+import androidx.core.widget.NestedScrollView
 import androidx.fragment.app.DialogFragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.fuxy.cookeasy.*
 import com.fuxy.cookeasy.adapter.EditStepAdapter
 import com.fuxy.cookeasy.adapter.IngredientFilterAdapter
 import com.fuxy.cookeasy.db.AppDatabase
 import com.fuxy.cookeasy.db.LocalTimeConverter
 import com.fuxy.cookeasy.entity.*
 import com.fuxy.cookeasy.s3.BucketImageObject
+import com.fuxy.cookeasy.dialogfragment.AddIngredientDialogFragment
+import com.fuxy.cookeasy.entity.EditStep
+import com.fuxy.cookeasy.entity.IngredientFilter
+import com.fuxy.cookeasy.entity.RecipeIngredient
+import com.fuxy.cookeasy.preference.PreferenceKeys
 import com.fuxy.cookeasy.s3.putObjectToBucket
+import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.textfield.TextInputLayout
 import com.toptoche.searchablespinnerlibrary.SearchableSpinner
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.threeten.bp.LocalTime
 import org.threeten.bp.format.DateTimeFormatter
 
-class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddIngredientListener  {
+class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddIngredientListener {
     enum class Mode { ADDING, EDITING }
 
     companion object {
@@ -74,18 +86,28 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
     private val minuteTimeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("m мин.")
     private var dishTextInputLayout: TextInputLayout? = null
     private var errorMessageTextView: TextView? = null
-    private var isDishImageSetted: Boolean = false
+    private var isDishImageSet: Boolean = false
     private var descriptionTextInputLayout: TextInputLayout? = null
     private var servingsTextInputLayout: TextInputLayout? = null
     private var servingsEditText: EditText? = null
     private var caloriesTextInputLayout: TextInputLayout? = null
     private var caloriesEditText: EditText? = null
     private var dishTypeSearchableSpinner: SearchableSpinner? = null
+    private var noConnectionLinearLayout: LinearLayout? = null
+    private var retryButton: Button? = null
+    private var editRecipeNestedScrollView: NestedScrollView? = null
+    private var stepAdapter: EditStepAdapter? = null
+    private var noConnectionSnackbar: Snackbar? = null
+    private var snackbarCoordinatorLayout: CoordinatorLayout? = null
+    private var timeout: Int? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_edit_recipe)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        timeout = PreferenceManager.getDefaultSharedPreferences(this)
+            ?.getString(PreferenceKeys.KEY_PREF_TIMEOUT, "0")?.toInt()
 
         mode = Mode.valueOf(intent.getStringExtra(EXTRA_MODE))
 
@@ -116,6 +138,25 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
         dishTypeSearchableSpinner?.setTitle(resources.getString(R.string.select_dish_type_title))
         dishTypeSearchableSpinner?.setPositiveButton(resources.getString(R.string.ok))
 
+        noConnectionLinearLayout = findViewById(R.id.ll_no_connection)
+        retryButton = findViewById(R.id.btn_retry)
+        editRecipeNestedScrollView = findViewById(R.id.nsv_edit_recipe)
+        snackbarCoordinatorLayout = findViewById(R.id.cl_snackbar)
+        noConnectionSnackbar = Snackbar.make(
+            snackbarCoordinatorLayout!!,
+            resources.getString(R.string.no_connection_snackbar_message),
+            Snackbar.LENGTH_LONG)
+            .setAction(R.string.retry2) {
+                GlobalScope.launch(Main) {
+                    if (isNetworkConnected(this@EditRecipeActivity) && isOnline(
+                            timeout!!
+                        )
+                    ) {
+                        updateRecipe()
+                    }
+                }
+            }
+
         uploadImageLinearLayout?.setOnClickListener {
             startChoosePhotoActivity()
         }
@@ -124,7 +165,7 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
             uploadImageLinearLayout?.visibility = View.VISIBLE
             dishImageView?.visibility = View.GONE
             photoActionsLinearLayout?.visibility = View.GONE
-            isDishImageSetted = false
+            isDishImageSet = false
         }
 
         changePhotoButton?.setOnClickListener {
@@ -146,16 +187,18 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
             timePickerDialog.show()
         }
 
-        ingredientAdapter = IngredientFilterAdapter(this, ingredients)
+        ingredientAdapter = IngredientFilterAdapter(/*this, */ingredients)
         ingredientsRecyclerView?.adapter = ingredientAdapter
         ingredientsRecyclerView?.layoutManager = LinearLayoutManager(this)
         ingredientsRecyclerView?.addItemDecoration(VerticalSpaceItemDecoration(40))
 
         addIngredientButton?.setOnClickListener {
-            addIngredientDialog?.show(supportFragmentManager, FilterActvityConstants.ADD_INGREDIENT_DIALOG_TAG)
+            addIngredientDialog?.show(supportFragmentManager,
+                FilterActivityConstants.ADD_INGREDIENT_DIALOG_TAG
+            )
         }
 
-        val stepAdapter = object : EditStepAdapter(steps) {
+        stepAdapter = object : EditStepAdapter(steps) {
             override fun setStepImage(stepImageView: ImageView, step: EditStep) {
                 currentStepImageView = stepImageView
                 currentStep = step
@@ -175,12 +218,12 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
 
         addStepButton?.setOnClickListener {
             steps.add(EditStep(stepNumber = steps.size + 1))
-            stepAdapter.notifyItemInserted(steps.size - 1)
+            stepAdapter?.notifyItemInserted(steps.size - 1)
         }
 
         deleteStepButton?.setOnClickListener {
             steps.removeAt(steps.size - 1)
-            stepAdapter.notifyItemRemoved(steps.size)
+            stepAdapter?.notifyItemRemoved(steps.size)
         }
 
         applyButton?.setOnClickListener {
@@ -194,7 +237,7 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
                 return@setOnClickListener
             }
 
-            if (!isDishImageSetted) {
+            if (!isDishImageSet) {
                 errorMessageTextView?.visibility = View.VISIBLE
                 errorMessageTextView?.text = resources.getString(R.string.add_ingredient_image_error)
                 return@setOnClickListener
@@ -234,86 +277,145 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
                 }
             }
 
-            if (mode == Mode.EDITING) {
-                if (recipeId != -1) {
-                    GlobalScope.launch(IO) {
-                        val ingredientDao = AppDatabase.getInstance(this@EditRecipeActivity)
-                            ?.recipeIngredientDao()
+            GlobalScope.launch {
+                if (isNetworkConnected(this@EditRecipeActivity) && isOnline(timeout!!)) {
+                    updateRecipe()
+                } else {
+                    noConnectionSnackbar?.show()
+                }
+            }
+        }
 
-                        var ingredientIds = ingredients.map { it.id }
-                        val ingredientsToRemove = ingredientsBackup?.filter { it.id !in ingredientIds }
-                        ingredientDao?.deleteAll(ingredientsToRemove!!)
+        if (mode == Mode.EDITING) {
+            supportActionBar?.title = resources.getString(R.string.edit)
+            recipeId = intent.getIntExtra(EXTRA_RECIPE_ID, -1)
+            applyButton?.text = resources.getString(R.string.edit)
 
-                        ingredientIds = ingredientsBackup?.map { it.id }!!
-                        val ingredientsToAdd = ingredients.filter { it.id !in ingredientIds }
-                        ingredientsToAdd.forEach {
-                            ingredientDao?.insertByIngredientFilter(
-                                recipeId = recipeId!!,
-                                ingredientId = it.ingredient?.id!!,
-                                ingredientCount = it.ingredientCount!!,
-                                unitId = it.unit?.id!!
-                            )
-                        }
+            if (recipeId!! > -1) {
+                GlobalScope.launch(IO) {
+                    if (isNetworkConnected(this@EditRecipeActivity) && isOnline(
+                            timeout!!
+                        )
+                    ) {
+                        loadRecipe()
+                    } else {
+                        noConnectionLinearLayout?.visibility = View.VISIBLE
+                        editRecipeNestedScrollView?.visibility = View.GONE
+                    }
+                }
+            }
+        } else {
+            supportActionBar?.title = resources.getString(R.string.add)
 
-                        val ingredientsToUpdate = ingredients.filter { it.id in ingredientIds }
-                        ingredientsToUpdate.forEach {
-                            ingredientDao?.updateById(
-                                id = it.id!!,
-                                recipeId = recipeId!!,
-                                ingredientId = it.ingredient?.id!!,
-                                ingredientCount = it.ingredientCount!!,
-                                unitId = it.unit?.id!!
-                            )
-                        }
+            GlobalScope.launch(IO) {
+                val dishTypeDao = AppDatabase.getInstance(this@EditRecipeActivity)?.dishTypeDao()
+                val dishTypes = dishTypeDao?.getAll()
+                dishTypeSearchableSpinner?.adapter =
+                    ArrayAdapter(this@EditRecipeActivity, android.R.layout.simple_list_item_1, dishTypes!!)
+            }
+        }
 
-                        val stepDao = AppDatabase.getInstance(this@EditRecipeActivity)?.stepDao()
-                        if (steps.size > stepCountBackup!!) {
-                            val stepsToAdd = steps.filter { it.stepNumber!! > stepCountBackup!! }
-                            stepsToAdd.forEach {
-                                var bucketPath: String? = null
-                                if (it.imageUri != null) {
-                                    bucketPath = putImageToBucketByUri(it.imageUri!!)
-                                }
-                                stepDao?.insertEditStep(
-                                    recipeId = recipeId!!,
-                                    stepNumber = it.stepNumber!!,
-                                    description = it.description!!,
-                                    bucketImagePath = bucketPath
-                                )
+        retryButton?.setOnClickListener {
+            GlobalScope.launch {
+                withContext(Main) { retryButton?.isEnabled = false }
+
+                if (isNetworkConnected(this@EditRecipeActivity) && isOnline(timeout!!)) {
+                    withContext(Main) {
+                        editRecipeNestedScrollView?.visibility = View.VISIBLE
+                        noConnectionLinearLayout?.visibility = View.GONE
+                    }
+                    loadRecipe()
+                } else {
+                    editRecipeNestedScrollView?.visibility = View.GONE
+                    noConnectionLinearLayout?.visibility = View.VISIBLE
+                }
+            }.invokeOnCompletion {
+                GlobalScope.launch(Dispatchers.Main) { retryButton?.isEnabled = true }
+            }
+        }
+    }
+
+    private fun updateRecipe() {
+        if (mode == Mode.EDITING) {
+            if (recipeId != -1) {
+                GlobalScope.launch(IO) {
+                    val ingredientDao = AppDatabase.getInstance(this@EditRecipeActivity)
+                        ?.recipeIngredientDao()
+
+                    var ingredientIds = ingredients.map { it.id }
+                    val ingredientsToRemove = ingredientsBackup?.filter { it.id !in ingredientIds }
+                    ingredientDao?.deleteAll(ingredientsToRemove!!)
+
+                    ingredientIds = ingredientsBackup?.map { it.id }!!
+                    val ingredientsToAdd = ingredients.filter { it.id !in ingredientIds }
+                    ingredientsToAdd.forEach {
+                        ingredientDao?.insertByIngredientFilter(
+                            recipeId = recipeId!!,
+                            ingredientId = it.ingredient?.id!!,
+                            ingredientCount = it.toIngredientCount!!,
+                            unitId = it.unit?.id!!
+                        )
+                    }
+
+                    val ingredientsToUpdate = ingredients.filter { it.id in ingredientIds }
+                    ingredientsToUpdate.forEach {
+                        ingredientDao?.updateById(
+                            id = it.id!!,
+                            recipeId = recipeId!!,
+                            ingredientId = it.ingredient?.id!!,
+                            ingredientCount = it.toIngredientCount!!,
+                            unitId = it.unit?.id!!
+                        )
+                    }
+
+                    val stepDao = AppDatabase.getInstance(this@EditRecipeActivity)?.stepDao()
+                    if (steps.size > stepCountBackup!!) {
+                        val stepsToAdd = steps.filter { it.stepNumber!! > stepCountBackup!! }
+                        stepsToAdd.forEach {
+                            var bucketPath: String? = null
+                            if (it.imageUri != null) {
+                                bucketPath = putImageToBucketByUri(it.imageUri!!)
                             }
+                            stepDao?.insertEditStep(
+                                recipeId = recipeId!!,
+                                stepNumber = it.stepNumber!!,
+                                description = it.description!!,
+                                bucketImagePath = bucketPath
+                            )
+                        }
 
-                            val stepsToUpdate = steps.filter { it.stepNumber!! <= stepCountBackup!! }
-                            stepsToUpdate.forEach {
-                                if (it.imageUri != null) {
-                                    val bucketPath = putImageToBucketByUri(it.imageUri!!)
-                                    stepDao?.updateByRecipeIdStepNumber(
-                                        description = it.description!!,
-                                        recipeId = recipeId!!,
-                                        bucketImagePath = bucketPath,
-                                        stepNumber = it.stepNumber!!
-                                    )
-                                }
+                        val stepsToUpdate = steps.filter { it.stepNumber!! <= stepCountBackup!! }
+                        stepsToUpdate.forEach {
+                            if (it.imageUri != null) {
+                                val bucketPath = putImageToBucketByUri(it.imageUri!!)
                                 stepDao?.updateByRecipeIdStepNumber(
                                     description = it.description!!,
                                     recipeId = recipeId!!,
+                                    bucketImagePath = bucketPath,
                                     stepNumber = it.stepNumber!!
                                 )
                             }
-                        } else {
-                            for (i in steps.size + 1..stepCountBackup!!) {
-                                stepDao?.deleteByRecipeIdStepNumber(recipeId!!, i)
-                            }
+                            stepDao?.updateByRecipeIdStepNumber(
+                                description = it.description!!,
+                                recipeId = recipeId!!,
+                                stepNumber = it.stepNumber!!
+                            )
+                        }
+                    } else {
+                        for (i in steps.size + 1..stepCountBackup!!) {
+                            stepDao?.deleteByRecipeIdStepNumber(recipeId!!, i)
+                        }
 
-                            steps.forEach {
-                                if (it.imageUri != null) {
-                                    val bucketPath = putImageToBucketByUri(it.imageUri!!)
-                                    stepDao?.updateByRecipeIdStepNumber(
-                                        description = it.description!!,
-                                        recipeId = recipeId!!,
-                                        bucketImagePath = bucketPath,
-                                        stepNumber = it.stepNumber!!
-                                    )
-                                }
+                        steps.forEach {
+                            if (it.imageUri != null) {
+                                val bucketPath = putImageToBucketByUri(it.imageUri!!)
+                                stepDao?.updateByRecipeIdStepNumber(
+                                    description = it.description!!,
+                                    recipeId = recipeId!!,
+                                    bucketImagePath = bucketPath,
+                                    stepNumber = it.stepNumber!!
+                                )
+                            } else {
                                 stepDao?.updateByRecipeIdStepNumber(
                                     description = it.description!!,
                                     recipeId = recipeId!!,
@@ -347,50 +449,6 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
                                 dishTypeId = dishTypeId!!
                             )
                         }
-                    }.invokeOnCompletion {
-                        val returnIntent = Intent()
-                        returnIntent.putExtra(EXTRA_RECIPE_ID, recipeId)
-                        setResult(Activity.RESULT_OK, returnIntent)
-                        finish()
-                    }
-                }
-            } else {
-                GlobalScope.launch(IO) {
-                    val recipeDao = AppDatabase.getInstance(this@EditRecipeActivity)?.recipeDao()
-                    val bucketPath = putImageToBucketByUri(dishImageUri!!)
-                    val dishTypeId = (dishTypeSearchableSpinner?.selectedItem as DishType).id
-                    recipeId = recipeDao?.insert(
-                        dish = dishEditText?.text.toString(),
-                        description = descriptionEditText?.text.toString(),
-                        cookingTime = cookingLocalTime!!,
-                        bucketImagePath = bucketPath,
-                        servings = servingsEditText!!.text.toString().toInt(),
-                        calories = caloriesEditText!!.text.toString().toInt(),
-                        dishTypeId = dishTypeId!!
-                    )?.toInt()
-
-                    val ingredientDao = AppDatabase.getInstance(this@EditRecipeActivity)?.recipeIngredientDao()
-                    ingredients.forEach {
-                        ingredientDao?.insertByIngredientFilter(
-                            recipeId = recipeId!!,
-                            ingredientId = it.ingredient?.id!!,
-                            ingredientCount = it.ingredientCount!!,
-                            unitId = it.unit?.id!!
-                        )
-                    }
-
-                    val stepDao = AppDatabase.getInstance(this@EditRecipeActivity)?.stepDao()
-                    steps.forEach {
-                        var bucketPath: String? = null
-                        if (it.imageUri != null) {
-                            bucketPath = putImageToBucketByUri(it.imageUri!!)
-                        }
-                        stepDao?.insertEditStep(
-                            recipeId = recipeId!!,
-                            description = it.description!!,
-                            bucketImagePath = bucketPath,
-                            stepNumber = it.stepNumber!!
-                        )
                     }
                 }.invokeOnCompletion {
                     val returnIntent = Intent()
@@ -399,85 +457,125 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
                     finish()
                 }
             }
+        } else {
+            GlobalScope.launch(IO) {
+                val recipeDao = AppDatabase.getInstance(this@EditRecipeActivity)?.recipeDao()
+                val bucketPath = putImageToBucketByUri(dishImageUri!!)
+                val dishTypeId = (dishTypeSearchableSpinner?.selectedItem as DishType).id
+                recipeId = recipeDao?.insert(
+                    dish = dishEditText?.text.toString(),
+                    description = descriptionEditText?.text.toString(),
+                    cookingTime = cookingLocalTime!!,
+                    bucketImagePath = bucketPath,
+                    servings = servingsEditText!!.text.toString().toInt(),
+                    calories = caloriesEditText!!.text.toString().toInt(),
+                    dishTypeId = dishTypeId!!
+                )?.toInt()
+
+                val ingredientDao = AppDatabase.getInstance(this@EditRecipeActivity)?.recipeIngredientDao()
+                ingredients.forEach {
+                    ingredientDao?.insertByIngredientFilter(
+                        recipeId = recipeId!!,
+                        ingredientId = it.ingredient?.id!!,
+                        ingredientCount = it.toIngredientCount!!,
+                        unitId = it.unit?.id!!
+                    )
+                }
+
+                val stepDao = AppDatabase.getInstance(this@EditRecipeActivity)?.stepDao()
+                steps.forEach {
+                    var bucketPath: String? = null
+                    if (it.imageUri != null) {
+                        bucketPath = putImageToBucketByUri(it.imageUri!!)
+                    }
+                    stepDao?.insertEditStep(
+                        recipeId = recipeId!!,
+                        description = it.description!!,
+                        bucketImagePath = bucketPath,
+                        stepNumber = it.stepNumber!!
+                    )
+                }
+            }.invokeOnCompletion {
+                val returnIntent = Intent()
+                returnIntent.putExtra(EXTRA_RECIPE_ID, recipeId)
+                setResult(Activity.RESULT_OK, returnIntent)
+                finish()
+            }
+        }
+    }
+
+    private suspend fun loadRecipe() {
+        val recipeDao = AppDatabase.getInstance(this)?.recipeDao()
+        val recipeIngredientDao =
+            AppDatabase.getInstance(this)?.recipeIngredientDao()
+        val stepDao = AppDatabase.getInstance(this)?.stepDao()
+        val ingredientDao = AppDatabase.getInstance(this)?.ingredientDao()
+        val unitDao = AppDatabase.getInstance(this)?.unitDao()
+        val dishTypeDao = AppDatabase.getInstance(this@EditRecipeActivity)?.dishTypeDao()
+
+        val recipe = recipeDao?.getById(recipeId!!)
+        ingredientsBackup = recipeIngredientDao?.getByRecipeId(recipeId!!)
+        val steps = stepDao?.getByRecipeId(recipeId!!)
+        stepCountBackup = steps?.size
+        val dishTypes = dishTypeDao?.getAll()
+
+        if (ingredientsBackup != null) {
+            for (i in ingredientsBackup!!) {
+                ingredients.add(
+                    IngredientFilter(
+                        ingredient = ingredientDao?.getById(i.ingredientId),
+                        toIngredientCount = i.ingredientCount,
+                        unit = unitDao?.getById(i.unitId),
+                        id = i.id
+                    )
+                )
+            }
         }
 
-        if (mode == Mode.EDITING) {
-            supportActionBar?.title = resources.getString(R.string.edit)
-            recipeId = intent.getIntExtra(EXTRA_RECIPE_ID, -1)
-            applyButton?.text = resources.getString(R.string.edit)
+        if (steps != null) {
+            for (s in steps) {
+                this.steps.add(
+                    EditStep(
+                        stepNumber = s.stepNumber,
+                        description = s.description,
+                        imageBitmap = s.stepBucketImage?.bitmap
+                    )
+                )
+            }
+        }
 
-            if (recipeId!! > -1) {
-                GlobalScope.launch(IO) {
-                    val recipeDao = AppDatabase.getInstance(this@EditRecipeActivity)?.recipeDao()
-                    val recipeIngredientDao =
-                        AppDatabase.getInstance(this@EditRecipeActivity)?.recipeIngredientDao()
-                    val stepDao = AppDatabase.getInstance(this@EditRecipeActivity)?.stepDao()
-                    val ingredientDao = AppDatabase.getInstance(this@EditRecipeActivity)?.ingredientDao()
-                    val unitDao = AppDatabase.getInstance(this@EditRecipeActivity)?.unitDao()
-                    val dishTypeDao = AppDatabase.getInstance(this@EditRecipeActivity)?.dishTypeDao()
+        withContext(Main) {
+            dishEditText?.setText(recipe?.dish)
+            descriptionEditText?.setText(recipe?.description)
 
-                    val recipe = recipeDao?.getById(recipeId!!)
-                    ingredientsBackup = recipeIngredientDao?.getByRecipeId(recipeId!!)
-                    val steps = stepDao?.getByRecipeId(recipeId!!)
-                    stepCountBackup = steps?.size
-                    val dishTypes = dishTypeDao?.getAll()
+            dishImageView?.setImageBitmap(recipe?.bucketImage?.bitmap)
+            isDishImageSet = true
+            uploadImageLinearLayout?.visibility = View.GONE
+            dishImageView?.visibility = View.VISIBLE
+            photoActionsLinearLayout?.visibility = View.VISIBLE
+            servingsEditText?.setText(recipe?.servings.toString())
+            caloriesEditText?.setText(recipe?.calories.toString())
 
-                    if (ingredientsBackup != null) {
-                        for (i in ingredientsBackup!!) {
-                            ingredients.add(IngredientFilter(
-                                ingredient = ingredientDao?.getById(i.ingredientId),
-                                ingredientCount = i.ingredientCount,
-                                unit = unitDao?.getById(i.unitId),
-                                id = i.id
-                            ))
-                        }
-                    }
+            val dishTypeAdapter =
+                ArrayAdapter(this@EditRecipeActivity, android.R.layout.simple_list_item_1, dishTypes!!)
+            dishTypeSearchableSpinner?.adapter = dishTypeAdapter
 
-                    if (steps != null) {
-                        for (s in steps) {
-                            this@EditRecipeActivity.steps.add(EditStep(
-                                stepNumber = s.stepNumber,
-                                description = s.description,
-                                imageBitmap = s.stepBucketImage?.bitmap
-                            ))
-                        }
-                    }
-
-                    GlobalScope.launch(Main) {
-                        dishEditText?.setText(recipe?.dish)
-                        descriptionEditText?.setText(recipe?.description)
-
-                        dishImageView?.setImageBitmap(recipe?.bucketImage?.bitmap)
-                        isDishImageSetted = true
-                        uploadImageLinearLayout?.visibility = View.GONE
-                        dishImageView?.visibility = View.VISIBLE
-                        photoActionsLinearLayout?.visibility = View.VISIBLE
-
-                        cookingLocalTime = recipe?.cookingTime
-                        if (cookingLocalTime != null && cookingLocalTime!!.hour > 0)
-                            cookingTimeTextView?.text = hourMinuteTimeFormatter.format(cookingLocalTime)
-                        else
-                            cookingTimeTextView?.text = minuteTimeFormatter.format(cookingLocalTime)
-
-                        servingsEditText?.setText(recipe?.servings.toString())
-                        caloriesEditText?.setText(recipe?.calories.toString())
-
-                        ingredientAdapter?.notifyDataSetChanged()
-                        stepAdapter.notifyDataSetChanged()
-
-                        val dishTypeAdapter =
-                            ArrayAdapter(this@EditRecipeActivity, android.R.layout.simple_list_item_1, dishTypes!!)
-                        dishTypeSearchableSpinner?.adapter = dishTypeAdapter
-
-                        for (i in 0 until dishTypeAdapter.count) {
-                            if (dishTypeAdapter.getItem(i)!!.id == recipe!!.dishTypeId)
-                                dishTypeSearchableSpinner?.setSelection(i)
-                        }
-                    }
+            for (i in 0 until dishTypeAdapter.count) {
+                if (dishTypeAdapter.getItem(i)!!.id == recipe!!.dishTypeId) {
+                    dishTypeSearchableSpinner?.setSelection(i)
+                    break
                 }
             }
-        } else {
-            supportActionBar?.title = resources.getString(R.string.add)
+
+            cookingLocalTime = recipe?.cookingTime
+            if (cookingLocalTime != null && cookingLocalTime!!.hour > 0)
+                cookingTimeTextView?.text = hourMinuteTimeFormatter.format(cookingLocalTime)
+            else
+                cookingTimeTextView?.text = minuteTimeFormatter.format(cookingLocalTime)
+
+            ingredientAdapter?.notifyDataSetChanged()
+            stepAdapter?.notifyDataSetChanged()
+
         }
     }
 
@@ -514,7 +612,7 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
                     dishImageView?.setImageURI(null)
                     dishImageView?.setImageURI(selectedImageUri)
                     dishImageUri = selectedImageUri
-                    isDishImageSetted = true
+                    isDishImageSet = true
 
                     uploadImageLinearLayout?.visibility = View.GONE
                     dishImageView?.visibility = View.VISIBLE

@@ -1,24 +1,28 @@
-package com.fuxy.cookeasy
+package com.fuxy.cookeasy.activity
 
 import android.app.Activity
+import android.content.DialogInterface
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.preference.PreferenceManager
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.widget.AdapterView
-import android.widget.ImageView
-import android.widget.Spinner
-import android.widget.TextView
+import android.widget.*
+import androidx.appcompat.app.AlertDialog
 import androidx.core.widget.NestedScrollView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.fuxy.cookeasy.RecipeActivityConstants.EDIT_RECIPE_REQUEST
+import com.fuxy.cookeasy.R
+import com.fuxy.cookeasy.VerticalSpaceItemDecoration
+import com.fuxy.cookeasy.activity.RecipeActivityConstants.EDIT_RECIPE_REQUEST
 import com.fuxy.cookeasy.adapter.RecipeIngredientAdapter
 import com.fuxy.cookeasy.adapter.StepAdapter
 import com.fuxy.cookeasy.db.AppDatabase
-import com.fuxy.cookeasy.db.LocalTimeConverter
+import com.fuxy.cookeasy.isNetworkConnected
+import com.fuxy.cookeasy.isOnline
+import com.fuxy.cookeasy.preference.PreferenceKeys
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -47,6 +51,12 @@ class RecipeActivity : AppCompatActivity() {
     private val hourMinuteTimeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("H ч. m мин.")
     private val minuteTimeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("m мин.")
     private var recipeNestedScrollView: NestedScrollView? = null
+    private var ratingBar: RatingBar? = null
+    private var isRatingChanged: Boolean = false
+    private var removeConfirmationDialog: AlertDialog? = null
+    private var noConnectionLinearLayout: LinearLayout? = null
+    private var retryButton: Button? = null
+    private var timeout: Int? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,6 +65,9 @@ class RecipeActivity : AppCompatActivity() {
         var isTitleShowed = false
         supportActionBar?.setDisplayShowTitleEnabled(isTitleShowed)
 
+        timeout = PreferenceManager.getDefaultSharedPreferences(this)
+            ?.getString(PreferenceKeys.KEY_PREF_TIMEOUT, "0")?.toInt()
+
         dishTextView = findViewById(R.id.tv_dish)
         dishImageView = findViewById(R.id.iv_dish_image)
         descriptionTextView = findViewById(R.id.tv_description)
@@ -62,6 +75,9 @@ class RecipeActivity : AppCompatActivity() {
         stepsRecyclerView = findViewById(R.id.rv_steps)
         recipeNestedScrollView = findViewById(R.id.nsv_recipe)
         cookingTimeTextView = findViewById(R.id.tv_cooking_time)
+        ratingBar = findViewById(R.id.rb_rating)
+        noConnectionLinearLayout = findViewById(R.id.ll_no_connection)
+        retryButton = findViewById(R.id.btn_retry)
 
         ingredientsRecyclerView?.layoutManager = LinearLayoutManager(this)
         stepsRecyclerView?.layoutManager = LinearLayoutManager(this)
@@ -88,10 +104,62 @@ class RecipeActivity : AppCompatActivity() {
             }
         }
 
+        ratingBar?.onRatingBarChangeListener =
+            RatingBar.OnRatingBarChangeListener { _, _, fromUser ->
+                if (fromUser) {
+                    isRatingChanged = true
+                }
+            }
+
         recipeId = intent.getIntExtra(RecipeActivityConstants.EXTRA_RECIPE_ID, -1)
 
         if (recipeId != -1) {
-            GlobalScope.launch { loadRecipe() }
+            GlobalScope.launch {
+                if (isNetworkConnected(this@RecipeActivity) && isOnline(timeout!!)) {
+                    loadRecipe()
+                } else {
+                    recipeNestedScrollView?.visibility = View.GONE
+                    noConnectionLinearLayout?.visibility = View.VISIBLE
+                }
+            }
+        }
+
+        removeConfirmationDialog = AlertDialog.Builder(this)
+            .setTitle(R.string.remove_dialog_title)
+            .setMessage(R.string.remove_dialog_message)
+            .setPositiveButton(R.string.yes) { _: DialogInterface, _: Int ->
+                GlobalScope.launch(Dispatchers.IO) {
+                    AppDatabase.getInstance(this@RecipeActivity)?.recipeDao()?.deleteById(recipeId)
+                }.invokeOnCompletion {
+                    editResultCode = Activity.RESULT_OK
+                    recipeState = RecipeState.DELETED
+                    val returnIntent = Intent()
+                    returnIntent.putExtra(RecipeActivityConstants.EXTRA_RECIPE_ID, recipeId)
+                    returnIntent.putExtra(RecipeActivityConstants.EXTRA_RECIPE_STATE, recipeState.name)
+                    setResult(editResultCode, returnIntent)
+                    finish()
+                }
+            }
+            .setNegativeButton(R.string.no) { _: DialogInterface, _: Int -> }
+            .create()
+
+        retryButton?.setOnClickListener {
+            GlobalScope.launch {
+                withContext(Dispatchers.Main) { retryButton?.isEnabled = false }
+
+                if (isNetworkConnected(this@RecipeActivity) && isOnline(timeout!!)) {
+                    withContext(Dispatchers.Main) {
+                        recipeNestedScrollView?.visibility = View.VISIBLE
+                        noConnectionLinearLayout?.visibility = View.GONE
+                    }
+                    loadRecipe()
+                } else {
+                    recipeNestedScrollView?.visibility = View.GONE
+                    noConnectionLinearLayout?.visibility = View.VISIBLE
+                }
+            }.invokeOnCompletion {
+                GlobalScope.launch(Dispatchers.Main) { retryButton?.isEnabled = true }
+            }
         }
     }
 
@@ -110,6 +178,7 @@ class RecipeActivity : AppCompatActivity() {
                 dishTextView?.text = recipe.dish
                 dishImageView?.setImageBitmap(recipe.bucketImage.bitmap)
                 descriptionTextView?.text = recipe.description
+                ratingBar?.rating = recipe.rating
 
                 if (recipe.cookingTime.hour > 0)
                     cookingTimeTextView?.text = hourMinuteTimeFormatter.format(recipe.cookingTime)
@@ -137,24 +206,29 @@ class RecipeActivity : AppCompatActivity() {
                 startActivityForResult(intent, EDIT_RECIPE_REQUEST)
             }
             R.id.recipe_delete -> {
-                GlobalScope.launch(Dispatchers.IO) {
-                    AppDatabase.getInstance(this@RecipeActivity)?.recipeDao()?.deleteById(recipeId)
-                }.invokeOnCompletion {
-                    editResultCode = Activity.RESULT_OK
-                    recipeState = RecipeState.DELETED
+                removeConfirmationDialog?.show()
+            }
+            android.R.id.home -> {
+                if (isRatingChanged) {
+                    GlobalScope.launch(Dispatchers.IO) {
+                        AppDatabase.getInstance(this@RecipeActivity)?.recipeDao()?.changeRatingById(
+                            ratingBar!!.rating, recipeId)
+                    }.invokeOnCompletion {
+                        editResultCode = Activity.RESULT_OK
+                        recipeState = RecipeState.EDITED
+                        val returnIntent = Intent()
+                        returnIntent.putExtra(RecipeActivityConstants.EXTRA_RECIPE_ID, recipeId)
+                        returnIntent.putExtra(RecipeActivityConstants.EXTRA_RECIPE_STATE, recipeState.name)
+                        setResult(editResultCode, returnIntent)
+                        finish()
+                    }
+                } else {
                     val returnIntent = Intent()
                     returnIntent.putExtra(RecipeActivityConstants.EXTRA_RECIPE_ID, recipeId)
                     returnIntent.putExtra(RecipeActivityConstants.EXTRA_RECIPE_STATE, recipeState.name)
                     setResult(editResultCode, returnIntent)
                     finish()
                 }
-            }
-            android.R.id.home -> {
-                val returnIntent = Intent()
-                returnIntent.putExtra(RecipeActivityConstants.EXTRA_RECIPE_ID, recipeId)
-                returnIntent.putExtra(RecipeActivityConstants.EXTRA_RECIPE_STATE, recipeState.name)
-                setResult(editResultCode, returnIntent)
-                finish()
                 return true
             }
         }
@@ -173,10 +247,25 @@ class RecipeActivity : AppCompatActivity() {
     }
 
     override fun onBackPressed() {
-        val returnIntent = Intent()
-        returnIntent.putExtra(RecipeActivityConstants.EXTRA_RECIPE_ID, recipeId)
-        returnIntent.putExtra(RecipeActivityConstants.EXTRA_RECIPE_STATE, recipeState.name)
-        setResult(editResultCode, returnIntent)
-        super.onBackPressed()
+        if (!isRatingChanged) {
+            val returnIntent = Intent()
+            returnIntent.putExtra(RecipeActivityConstants.EXTRA_RECIPE_ID, recipeId)
+            returnIntent.putExtra(RecipeActivityConstants.EXTRA_RECIPE_STATE, recipeState.name)
+            setResult(editResultCode, returnIntent)
+            super.onBackPressed()
+        } else {
+            GlobalScope.launch(Dispatchers.IO) {
+                AppDatabase.getInstance(this@RecipeActivity)?.recipeDao()?.changeRatingById(
+                    ratingBar!!.rating, recipeId)
+            }.invokeOnCompletion {
+                editResultCode = Activity.RESULT_OK
+                recipeState = RecipeState.EDITED
+                val returnIntent = Intent()
+                returnIntent.putExtra(RecipeActivityConstants.EXTRA_RECIPE_ID, recipeId)
+                returnIntent.putExtra(RecipeActivityConstants.EXTRA_RECIPE_STATE, recipeState.name)
+                setResult(editResultCode, returnIntent)
+                GlobalScope.launch(Dispatchers.Main) { super.onBackPressed() }
+            }
+        }
     }
 }

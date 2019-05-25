@@ -6,13 +6,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.RatingBar
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.fuxy.cookeasy.EditRecipeActivity
 import com.fuxy.cookeasy.R
-import com.fuxy.cookeasy.RecipeActivity
-import com.fuxy.cookeasy.RecipeActivityConstants
-import com.fuxy.cookeasy.db.LocalTimeConverter
+import com.fuxy.cookeasy.activity.RecipeActivity
+import com.fuxy.cookeasy.activity.RecipeActivityConstants
 import com.fuxy.cookeasy.entity.Recipe
 import com.fuxy.cookeasy.fragment.RecipesFragment
 import org.threeten.bp.format.DateTimeFormatter
@@ -42,6 +41,8 @@ class RecipeAdapter(private val fragment: RecipesFragment, private val recipes: 
             holder.cookingTimeTextView?.text = hourTimeFormatter.format(recipe.cookingTime)
         else
             holder.cookingTimeTextView?.text = minuteTimeFormatter.format(recipe.cookingTime)
+
+        holder.ratingBar?.rating = recipe.rating
     }
 
     inner class ViewHolder(val context: Context, itemView: View)
@@ -49,11 +50,13 @@ class RecipeAdapter(private val fragment: RecipesFragment, private val recipes: 
         var dishTextView: TextView? = null
         var dishImageView: ImageView? = null
         var cookingTimeTextView: TextView? = null
+        var ratingBar: RatingBar? = null
 
         init {
             dishTextView = itemView.findViewById(R.id.tv_dish)
             dishImageView = itemView.findViewById(R.id.iv_dish_image)
             cookingTimeTextView = itemView.findViewById(R.id.tv_cooking_time)
+            ratingBar = itemView.findViewById(R.id.rb_rating)
 
             itemView.setOnClickListener(this)
         }

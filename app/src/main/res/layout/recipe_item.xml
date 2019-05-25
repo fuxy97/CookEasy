@@ -42,8 +42,18 @@
                 android:layout_marginTop="5dp"
                 android:layout_marginStart="5dp"
                 android:layout_marginEnd="5dp"
-                android:layout_marginBottom="5dp"
                 android:textSize="14sp" />
+
+            <androidx.appcompat.widget.AppCompatRatingBar
+                    android:id="@+id/rb_rating"
+                    android:max="5"
+                    android:numStars="5"
+                    android:stepSize=".5"
+                    android:layout_margin="5dp"
+                    style="?android:attr/ratingBarStyleSmall"
+                    android:isIndicator="true"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
 
         </LinearLayout>
     </androidx.cardview.widget.CardView>

@@ -1,4 +1,4 @@
-package com.fuxy.cookeasy
+package com.fuxy.cookeasy.activity
 
 import android.app.Activity
 import android.content.Context
@@ -13,6 +13,8 @@ import android.widget.EditText
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
+import androidx.preference.PreferenceManager
+import com.fuxy.cookeasy.R
 import com.fuxy.cookeasy.fragment.RecipesFragment
 import com.fuxy.cookeasy.fragment.SettingsFragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
@@ -30,6 +32,8 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        PreferenceManager.setDefaultValues(this, R.xml.preferences, false)
+
         bottomNavigationView = findViewById(R.id.bnv_navigation)
         bottomNavigationView?.setOnNavigationItemSelectedListener(this)
 
@@ -41,17 +45,20 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
 
     private fun loadFragment(fragment: Fragment?, name: String?): Boolean {
         if (fragment != null) {
-            val transaction = supportFragmentManager
-                .beginTransaction()
-                .replace(R.id.fl_fragment_container, fragment)
-
+            val isPopped = supportFragmentManager.popBackStackImmediate()
             val count = supportFragmentManager.backStackEntryCount
 
-            if (name != RecipesFragment.FRAGMENT_NAME) {
-                transaction.addToBackStack(name)
-            }
+            if (!isPopped) {
+                val transaction = supportFragmentManager
+                    .beginTransaction()
+                    .replace(R.id.fl_fragment_container, fragment)
 
-            transaction.commit()
+                if (name != RecipesFragment.FRAGMENT_NAME) {
+                    transaction.addToBackStack(name)
+                }
+
+                transaction.commit()
+            }
 
             supportFragmentManager.addOnBackStackChangedListener(object : FragmentManager.OnBackStackChangedListener {
                 override fun onBackStackChanged() {

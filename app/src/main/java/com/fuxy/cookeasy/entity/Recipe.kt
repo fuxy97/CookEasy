@@ -22,5 +22,6 @@ data class Recipe(
     val description: String,
     @ColumnInfo(name = "dish_type_id") val dishTypeId: Int? = null,
     val servings: Int,
-    val calories: Int
-    )
+    val calories: Int,
+    val rating: Float = 0.0f
+)

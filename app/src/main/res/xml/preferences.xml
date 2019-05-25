@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <com.fuxy.cookeasy.preference.PositiveNumberPreference
+            android:inputType="number"
+            android:defaultValue="1500"
+            android:key="pref_timeout"
+            android:numeric="integer"
+            android:singleLine="true"
+            android:layout="@layout/layout_custom_edittext_preference"
+            android:title="@string/title_timeout_preference"
+            android:summary="@string/summary_timeout_preference" />
+
+    <com.fuxy.cookeasy.preference.PercentagePreference
+            style="@style/Theme.CookEasy.App.PreferenceTheme.DialogPreference"
+            android:inputType="number"
+            android:defaultValue="35"
+            android:key="pref_deviation"
+            android:numeric="integer"
+            android:singleLine="true"
+            android:layout="@layout/layout_custom_edittext_preference"
+            android:title="@string/title_deviation_preference"
+            android:summary="@string/summary_deviation_preference" />
+
+    <Preference
+            android:key="pref_edit_unit"
+            android:title="@string/title_edit_unit_preference"
+            android:summary="@string/summary_edit_unit_preference"
+            android:layout="@layout/layout_custom_edittext_preference">
+        <intent
+                android:targetPackage="com.fuxy.cookeasy"
+                android:targetClass="com.fuxy.cookeasy.activity.EditUnitActivity" />
+    </Preference>
+
+    <Preference
+            android:key="pref_edit_ingredient"
+            android:title="@string/title_ingredient_preference"
+            android:summary="@string/summary_ingredient_preference"
+            android:layout="@layout/layout_custom_edittext_preference">
+        <intent
+                android:targetPackage="com.fuxy.cookeasy"
+                android:targetClass="com.fuxy.cookeasy.activity.EditIngredientActivity" />
+    </Preference>
+
+</PreferenceScreen>

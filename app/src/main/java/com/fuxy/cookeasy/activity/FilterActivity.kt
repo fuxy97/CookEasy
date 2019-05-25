@@ -1,7 +1,6 @@
-package com.fuxy.cookeasy
+package com.fuxy.cookeasy.activity
 
 import android.app.Activity
-import android.app.Dialog
 import android.app.TimePickerDialog
 import android.content.DialogInterface
 import android.content.Intent
@@ -15,13 +14,23 @@ import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.fuxy.cookeasy.*
 import com.fuxy.cookeasy.adapter.IngredientFilterAdapter
+import com.fuxy.cookeasy.db.AppDatabase
+import com.fuxy.cookeasy.dialogfragment.AddIngredientDialogFragment
+import com.fuxy.cookeasy.dialogfragment.AddIngredientDialogFragmentConstants
+import com.fuxy.cookeasy.dialogfragment.AddIngredientDialogMode
 import com.fuxy.cookeasy.entity.IngredientFilter
+import com.fuxy.cookeasy.entity.ParcelableIngredientFilter
 import com.fuxy.cookeasy.fragment.RecipesFragment
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Dispatchers.Main
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import org.threeten.bp.LocalTime
 import org.threeten.bp.format.DateTimeFormatter
 
-object FilterActvityConstants {
+object FilterActivityConstants {
     const val ADD_INGREDIENT_DIALOG_TAG = "add_ingredient_dialog"
 }
 
@@ -41,12 +50,22 @@ class FilterActivity : AppCompatActivity(), AddIngredientDialogFragment.AddIngre
     private var toTextView: TextView? = null
     private var toCookingTimeTextView: TextView? = null
     private var timeOptionSpinner: Spinner? = null
+    private var errorMessageTextView: TextView? = null
+    private var isTimeOptionSwitched = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_filter)
         setTitle(R.string.filters)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        val fromTimeHour = intent.getIntExtra(RecipesFragment.EXTRA_FILTER_RESULT_FROM_TIME_HOUR, -1)
+        val fromTimeMinute = intent.getIntExtra(RecipesFragment.EXTRA_FILTER_RESULT_FROM_TIME_MINUTE, -1)
+        val toTimeHour = intent.getIntExtra(RecipesFragment.EXTRA_FILTER_RESULT_TO_TIME_HOUR, -1)
+        val toTimeMinute = intent.getIntExtra(RecipesFragment.EXTRA_FILTER_RESULT_TO_TIME_MINUTE, -1)
+        val ingredientList =
+            intent.getParcelableArrayListExtra<ParcelableIngredientFilter>(
+                RecipesFragment.EXTRA_FILTER_RESULT_INGREDIENTS)
 
         addIngredientDialog = AddIngredientDialogFragment()
         val args = Bundle()
@@ -61,9 +80,84 @@ class FilterActivity : AppCompatActivity(), AddIngredientDialogFragment.AddIngre
         toTextView = findViewById(R.id.tv_to)
         toCookingTimeTextView = findViewById(R.id.tv_to_cooking_time)
         timeOptionSpinner = findViewById(R.id.sp_time_option)
+        errorMessageTextView = findViewById(R.id.tv_error_message)
 
-        ingredientsAdapter = IngredientFilterAdapter(this, ingredients)
-        ingredientsRecyclerView?.adapter = ingredientsAdapter
+        timeOptionSpinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                when (position) {
+                    0 -> {
+                        toTextView?.visibility = View.GONE
+                        fromTextView?.visibility = View.GONE
+                        if (isTimeOptionSwitched) {
+                            fromCookingLocalTime = null
+                            fromCookingTimeTextView?.text = resources.getString(R.string.choose_time)
+                            toCookingLocalTime = null
+                            toCookingTimeTextView?.text = resources.getString(R.string.choose_time)
+                        }
+                        fromCookingTimeTextView?.setTextColor(resources.getColor(R.color.materialGrey700))
+                        fromCookingTimeTextView?.visibility = View.GONE
+                        errorMessageTextView?.visibility = View.GONE
+                    }
+                    1 -> {
+                        toTextView?.visibility = View.VISIBLE
+                        fromTextView?.visibility = View.VISIBLE
+                        fromCookingTimeTextView?.visibility = View.VISIBLE
+                        if (isTimeOptionSwitched) {
+                            fromCookingLocalTime = null
+                            toCookingLocalTime = null
+                            toCookingTimeTextView?.text = resources.getString(R.string.choose_time)
+                        }
+                    }
+                }
+                isTimeOptionSwitched = true
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                return
+            }
+        }
+
+        if (fromTimeHour >= 0 && fromTimeMinute >= 0) {
+            timeOptionSpinner?.setSelection(1)
+            fromCookingLocalTime = LocalTime.of(fromTimeHour, fromTimeMinute)
+
+            if (fromTimeHour > 0)
+                fromCookingTimeTextView?.text = hourMinuteTimeFormatter.format(fromCookingLocalTime)
+            else
+                fromCookingTimeTextView?.text = minuteTimeFormatter.format(fromCookingLocalTime)
+        }
+
+        if (toTimeHour >= 0 && toTimeMinute >= 0) {
+            toCookingLocalTime = LocalTime.of(toTimeHour, toTimeMinute)
+
+            if (toTimeHour > 0)
+                toCookingTimeTextView?.text = hourMinuteTimeFormatter.format(toCookingLocalTime)
+            else
+                toCookingTimeTextView?.text = minuteTimeFormatter.format(toCookingLocalTime)
+        }
+
+        GlobalScope.launch(IO) {
+            val ingredientDao = AppDatabase.getInstance(this@FilterActivity)?.ingredientDao()
+            val unitDao = AppDatabase.getInstance(this@FilterActivity)?.unitDao()
+
+            if (ingredientList != null) {
+                for (i in ingredientList) {
+                    ingredients.add(
+                        IngredientFilter(
+                            ingredient = ingredientDao?.getById(i.ingredientId),
+                            fromIngredientCount = if (i.fromIngredientCount >= 0) i.fromIngredientCount else null,
+                            toIngredientCount = i.toIngredientCount,
+                            unit = unitDao?.getById(i.unitId)
+                        )
+                    )
+                }
+            }
+
+            GlobalScope.launch(Main) {
+                ingredientsAdapter = IngredientFilterAdapter(/*this, */ingredients)
+                ingredientsRecyclerView?.adapter = ingredientsAdapter
+            }
+        }
         ingredientsRecyclerView?.layoutManager = LinearLayoutManager(this)
         ingredientsRecyclerView?.addItemDecoration(VerticalSpaceItemDecoration(40))
 
@@ -86,7 +180,7 @@ class FilterActivity : AppCompatActivity(), AddIngredientDialogFragment.AddIngre
             } else {
                 timeErrorDialog.show()
             }
-        }, 0, 0, true)
+        }, toTimeHour, toTimeMinute, true)
         toTimePickerDialog.setTitle(R.string.choose_time)
         toCookingTimeTextView?.setOnClickListener {
             toTimePickerDialog.show()
@@ -105,18 +199,20 @@ class FilterActivity : AppCompatActivity(), AddIngredientDialogFragment.AddIngre
             } else {
                 timeErrorDialog.show()
             }
-        }, 0, 0, true)
+        }, fromTimeHour, fromTimeMinute, true)
         fromTimePickerDialog.setTitle(R.string.choose_time)
         fromCookingTimeTextView?.setOnClickListener {
             fromTimePickerDialog.show()
         }
 
         addIngredientButton?.setOnClickListener {
-            addIngredientDialog?.show(supportFragmentManager, FilterActvityConstants.ADD_INGREDIENT_DIALOG_TAG)
+            addIngredientDialog?.show(supportFragmentManager,
+                FilterActivityConstants.ADD_INGREDIENT_DIALOG_TAG
+            )
         }
 
         applyButton?.setOnClickListener {
-            for (i in ingredients) {
+/*            for (i in ingredients) {
                 if (i.ingredientCount == null) {
                      AlertDialog.Builder(this)
                         .setTitle(R.string.error)
@@ -128,40 +224,23 @@ class FilterActivity : AppCompatActivity(), AddIngredientDialogFragment.AddIngre
                          .show()
                     return@setOnClickListener
                 }
+            }*/
+            if (timeOptionSpinner?.selectedItemPosition == 1 && fromCookingLocalTime == null
+                && toCookingLocalTime != null) {
+                errorMessageTextView?.visibility = View.VISIBLE
+                fromCookingTimeTextView?.setTextColor(resources.getColor(android.R.color.holo_red_light))
+                return@setOnClickListener
             }
+
             val returnIntent = Intent()
-            returnIntent.putParcelableArrayListExtra(RecipesFragment.EXTRA_FILTER_RESULT,
+            returnIntent.putExtra(RecipesFragment.EXTRA_FILTER_RESULT_FROM_TIME_HOUR, fromCookingLocalTime?.hour)
+            returnIntent.putExtra(RecipesFragment.EXTRA_FILTER_RESULT_FROM_TIME_MINUTE, fromCookingLocalTime?.minute)
+            returnIntent.putExtra(RecipesFragment.EXTRA_FILTER_RESULT_TO_TIME_HOUR, toCookingLocalTime?.hour)
+            returnIntent.putExtra(RecipesFragment.EXTRA_FILTER_RESULT_TO_TIME_MINUTE, toCookingLocalTime?.minute)
+            returnIntent.putParcelableArrayListExtra(RecipesFragment.EXTRA_FILTER_RESULT_INGREDIENTS,
                 ArrayList(ingredients.map { it.toParcelable() }) )
             setResult(Activity.RESULT_OK, returnIntent)
             finish()
-        }
-
-        timeOptionSpinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                when (position) {
-                    0 -> {
-                        toTextView?.visibility = View.GONE
-                        fromTextView?.visibility = View.GONE
-                        fromCookingLocalTime = null
-                        fromCookingTimeTextView?.text = resources.getString(R.string.choose_time)
-                        toCookingLocalTime = null
-                        toCookingTimeTextView?.text = resources.getString(R.string.choose_time)
-                        fromCookingTimeTextView?.visibility = View.GONE
-                    }
-                    1 -> {
-                        toTextView?.visibility = View.VISIBLE
-                        fromTextView?.visibility = View.VISIBLE
-                        fromCookingTimeTextView?.visibility = View.VISIBLE
-                        fromCookingLocalTime = null
-                        toCookingLocalTime = null
-                        toCookingTimeTextView?.text = resources.getString(R.string.choose_time)
-                    }
-                }
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-                return
-            }
         }
     }
 
@@ -173,8 +252,8 @@ class FilterActivity : AppCompatActivity(), AddIngredientDialogFragment.AddIngre
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
         return when(item?.itemId) {
             R.id.filters_clear -> {
-                fromCookingLocalTime = LocalTime.of(0, 0)
-                toCookingLocalTime = LocalTime.of(0, 0)
+                fromCookingLocalTime = null
+                toCookingLocalTime = null
                 fromCookingTimeTextView?.text = resources.getString(R.string.choose_time)
                 toCookingTimeTextView?.text = resources.getString(R.string.choose_time)
                 ingredients.clear()

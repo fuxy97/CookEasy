@@ -15,7 +15,9 @@
     <string name="add_ingredient">Добавить ингредиент</string>
     <string name="apply">Применить</string>
     <string name="error">Ошибка</string>
-    <string name="filter_error">Необходимо заполнить все поля! Если Вы не заполнили поля в ингредиентах, то можно удалить эти ингредиенты.</string>
+    <string name="filter_error">Необходимо заполнить все поля! Если Вы не заполнили поля в ингредиентах, то можно
+        удалить эти ингредиенты.
+    </string>
     <string name="sort_by">Сортировать по</string>
     <string name="dish_name">Название блюда</string>
     <string name="upload_photo">Загрузить фото</string>
@@ -41,7 +43,8 @@
     <string name="add_ingredient_image_error">Ошибка! Вы должны добавить фотографию блюда.</string>
     <string name="add_ingredient_ingredients_error">Ошибка! Вы должны добавить хотя бы один ингредиент.</string>
     <string name="add_ingredient_steps_error">Ошибка! Вы должны добавить хотя бы один шаг.</string>
-    <string name="add_ingredient_steps_description_error">Ошибка! Вы должны заполнить поле описания во всех шагах.</string>
+    <string name="add_ingredient_steps_description_error">Ошибка! Вы должны заполнить поле описания во всех шагах.
+    </string>
     <string name="enter_dish">Введите название блюда…</string>
     <string name="enter_description">Введите описание…</string>
     <string name="add_recipe_error">Ошибка! Перед добавлением рецепта заполните все поля.</string>
@@ -56,6 +59,44 @@
     <string name="dish_type">Тип блюда</string>
     <string name="select_dish_type">Выберите тип блюда…</string>
     <string name="select_dish_type_title">Выберите тип блюда</string>
+    <string name="whooops">Ууупс</string>
+    <string name="no_internet_connection_message">Нет интернет соединения.\nПожалуйста проверьте настройки подключения.
+    </string>
+    <string name="refresh">Обновить</string>
+    <string name="retry">Попробовать еще раз</string>
+    <string name="retry2">Повторить</string>
+    <string name="remove_dialog_title">Удалить рецепт</string>
+    <string name="remove_dialog_message">Вы уверены, что хотите удалить рецепт?</string>
+    <string name="yes">Да</string>
+    <string name="no">Нет</string>
+    <string name="no_connection_snackbar_message">Нет интернет соединения</string>
+    <string name="title_timeout_preference">Тайм-аут</string>
+    <string name="summary_timeout_preference">Продолжительность тайм-аута в милисекундах при отсутствии подключения
+    </string>
+    <string name="title_edit_unit_preference">Единицы измерения</string>
+    <string name="summary_edit_unit_preference">Просмотр, добавление, редактирование и удаление единиц измерения
+    </string>
+    <string name="title_deviation_preference">Отклонение</string>
+    <string name="summary_deviation_preference">На сколько процентов количество ингредиента отклоняется от указанного
+        при поиске рецепта по приблизительному количеству
+    </string>
+    <string name="title_ingredient_preference">Ингредиенты</string>
+    <string name="summary_ingredient_preference">Просмотр, добавление, редактирование и удаление ингредиентов</string>
+    <string name="search">Поиск</string>
+    <string name="edit_unit_activity_title">Единицы измерения</string>
+    <string name="edit_unit_search_hint">Введите единицу…</string>
+    <string name="edit_record_error_message">Ошибка! Вы должны заполнить поле.</string>
+    <string name="unit_delete_confirmation">Вы уверены, что хотите удалить эту единицу измерения?</string>
+    <string name="ingredient_delete_confirmation">Вы уверены, что хотите удалить этот ингредиент?</string>
+    <string name="enter_unit">Введите единицу измерения…</string>
+    <string name="enter_unit_error">Введите единицу измерения</string>
+    <string name="delete_unit_error_message">Невозможно удалить единицу измерения, т.к. она уже используется в рецептах.
+    </string>
+    <string name="delete_ingredient_error_message">Невозможно удалить ингредиент, т.к. он уже используется в рецептах.
+    </string>
+    <string name="enter_ingredient">Введите ингредиент…</string>
+    <string name="enter_ingredient_error">Введите ингредиент</string>
+    <string name="range_time_error_message">Вы должны выбрать начальное время в диапазоне</string>
 
     <string-array name="sort_options">
         <item>Названию блюда (возрастание)</item>
