@@ -24,7 +24,7 @@ object AddIngredientDialogFragmentConstants {
     const val ARGUMENT_MODE = "mode"
 }
 
-class AddIngredientDialogFragment() : DialogFragment() {
+class AddIngredientDialogFragment : DialogFragment() {
     private var ingredientSearchableSpinner: SearchableSpinner? = null
     private var unitSearchableSpinner: SearchableSpinner? = null
     private var errorMessageTextView: TextView? = null

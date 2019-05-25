@@ -31,18 +31,22 @@ interface RecipeDao {
 
     @Query("UPDATE recipe " +
             "SET dish = :dish, cooking_time = :cookingTime, description = :description, " +
-            "bucket_image_absolute_path = :bucketImagePath " +
-            "WHERE id = :id")
-    fun updateById(id: Int, dish: String, cookingTime: LocalTime, description: String, bucketImagePath: String): Int
+            "bucket_image_absolute_path = :bucketImagePath, dish_type_id = :dishTypeId, servings = :servings, " +
+            "calories = :calories WHERE id = :id")
+    fun updateById(id: Int, dish: String, cookingTime: LocalTime, description: String, bucketImagePath: String,
+                   dishTypeId: Int, servings: Int, calories: Int): Int
 
     @Query("UPDATE recipe " +
-            "SET dish = :dish, cooking_time = :cookingTime, description = :description " +
-            "WHERE id = :id")
-    fun updateById(id: Int, dish: String, cookingTime: LocalTime, description: String): Int
+            "SET dish = :dish, cooking_time = :cookingTime, description = :description, dish_type_id = :dishTypeId, " +
+            "servings = :servings, calories = :calories WHERE id = :id")
+    fun updateById(id: Int, dish: String, cookingTime: LocalTime, description: String,
+                   dishTypeId: Int, servings: Int, calories: Int): Int
 
-    @Query("INSERT INTO recipe (dish, cooking_time, description, bucket_image_absolute_path) " +
-            "VALUES(:dish, :cookingTime, :description, :bucketImagePath)")
-    fun insert(dish: String, cookingTime: LocalTime, description: String, bucketImagePath: String): Long
+    @Query("INSERT INTO recipe (dish, cooking_time, description, bucket_image_absolute_path, dish_type_id, " +
+            "servings, calories) VALUES(:dish, :cookingTime, :description, :bucketImagePath, :dishTypeId, :servings, " +
+            ":calories)")
+    fun insert(dish: String, cookingTime: LocalTime, description: String, bucketImagePath: String,
+               dishTypeId: Int, servings: Int, calories: Int): Long
 
     @Query("DELETE FROM recipe WHERE id = :id")
     fun deleteById(id: Int): Int
