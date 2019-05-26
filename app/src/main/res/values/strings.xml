@@ -97,17 +97,24 @@
     <string name="edit_record_error_message">Ошибка! Вы должны заполнить поле.</string>
     <string name="unit_delete_confirmation">Вы уверены, что хотите удалить эту единицу измерения?</string>
     <string name="ingredient_delete_confirmation">Вы уверены, что хотите удалить этот ингредиент?</string>
+    <string name="dish_type_delete_confirmation">Вы уверены, что хотите удалить этот тип блюда?</string>
     <string name="enter_unit">Введите единицу измерения…</string>
     <string name="enter_unit_error">Введите единицу измерения</string>
     <string name="delete_unit_error_message">Невозможно удалить единицу измерения, т.к. она уже используется в рецептах.
     </string>
     <string name="delete_ingredient_error_message">Невозможно удалить ингредиент, т.к. он уже используется в рецептах.
     </string>
+    <string name="delete_dish_type_error_message">Невозможно удалить тип блюда, т.к. он уже используется в рецептах.
+    </string>
     <string name="enter_ingredient">Введите ингредиент…</string>
     <string name="enter_ingredient_error">Введите ингредиент</string>
     <string name="range_time_error_message">Вы должны выбрать начальное время в диапазоне</string>
     <string name="calories">Калории</string>
     <string name="servings">Количество персон</string>
+    <string name="dish_types">Типы блюд</string>
+    <string name="summary_dish_type_preference">Просмотр, добавление, редактирование и удаление типов блюд</string>
+    <string name="enter_dish_type">Введите тип блюда…</string>
+    <string name="enter_dish_type_error">Введите тип блюда</string>
 
     <string-array name="sort_options">
         <item>Названию блюда (возрастание)</item>

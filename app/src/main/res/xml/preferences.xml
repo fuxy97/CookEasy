@@ -41,4 +41,14 @@
                 android:targetClass="com.fuxy.cookeasy.activity.EditIngredientActivity" />
     </Preference>
 
+    <Preference
+        android:key="pref_edit_dish_type"
+        android:title="@string/dish_types"
+        android:summary="@string/summary_dish_type_preference"
+        android:layout="@layout/layout_custom_edittext_preference">
+        <intent
+            android:targetPackage="com.fuxy.cookeasy"
+            android:targetClass="com.fuxy.cookeasy.activity.EditDishTypeActivity" />
+    </Preference>
+
 </PreferenceScreen>
