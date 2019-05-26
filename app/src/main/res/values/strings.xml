@@ -115,6 +115,8 @@
     <string name="summary_dish_type_preference">Просмотр, добавление, редактирование и удаление типов блюд</string>
     <string name="enter_dish_type">Введите тип блюда…</string>
     <string name="enter_dish_type_error">Введите тип блюда</string>
+    <string name="share">Поделиться</string>
+    <string name="share_using">Поделиться с помощью</string>
 
     <string-array name="sort_options">
         <item>Названию блюда (возрастание)</item>

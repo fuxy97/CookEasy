@@ -3,9 +3,13 @@ package com.fuxy.cookeasy.activity
 import android.app.Activity
 import android.content.DialogInterface
 import android.content.Intent
+import android.graphics.Bitmap
+import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Environment
 import android.preference.PreferenceManager
+import android.provider.MediaStore
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -20,6 +24,8 @@ import com.fuxy.cookeasy.activity.RecipeActivityConstants.EDIT_RECIPE_REQUEST
 import com.fuxy.cookeasy.adapter.RecipeIngredientAdapter
 import com.fuxy.cookeasy.adapter.StepAdapter
 import com.fuxy.cookeasy.db.AppDatabase
+import com.fuxy.cookeasy.entity.RecipeIngredientUnitIngredient
+import com.fuxy.cookeasy.entity.Step
 import com.fuxy.cookeasy.isNetworkConnected
 import com.fuxy.cookeasy.isOnline
 import com.fuxy.cookeasy.preference.PreferenceKeys
@@ -28,6 +34,8 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.threeten.bp.format.DateTimeFormatter
+import java.io.File
+import java.io.FileOutputStream
 
 object RecipeActivityConstants {
     const val EXTRA_RECIPE_ID = "recipe_id"
@@ -60,6 +68,9 @@ class RecipeActivity : AppCompatActivity() {
     private var noConnectionLinearLayout: LinearLayout? = null
     private var retryButton: Button? = null
     private var timeout: Int? = null
+    private var recipeImageBitmap: Bitmap? = null
+    private var ingredients: List<RecipeIngredientUnitIngredient>? = null
+    private var steps: List<Step>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -177,15 +188,16 @@ class RecipeActivity : AppCompatActivity() {
             val dishTypeDao = AppDatabase.getInstance(applicationContext)!!.dishTypeDao()
 
             val recipe = recipeDao.getById(recipeId)
-            val ingredients = recipeIngredientDao.getByRecipeIdWithIngredientAndUnit(recipeId)
-            val steps = stepDao.getByRecipeId(recipeId)
+            ingredients = recipeIngredientDao.getByRecipeIdWithIngredientAndUnit(recipeId)
+            steps = stepDao.getByRecipeId(recipeId)
             val dishType = dishTypeDao.getById(recipe.dishTypeId)
 
             GlobalScope.launch(Dispatchers.Main) {
                 supportActionBar?.title = recipe.dish
                 dishTypeTextView?.text = dishType.dishType
                 dishTextView?.text = recipe.dish
-                dishImageView?.setImageBitmap(recipe.bucketImage.bitmap)
+                recipeImageBitmap = recipe.bucketImage.bitmap
+                dishImageView?.setImageBitmap(recipeImageBitmap)
                 descriptionTextView?.text = recipe.description
                 caloriesTextView?.text = "${recipe.calories} " + when {
                     recipe.calories == 1 -> "калория"
@@ -204,8 +216,8 @@ class RecipeActivity : AppCompatActivity() {
                 else
                     cookingTimeTextView?.text = minuteTimeFormatter.format(recipe.cookingTime)
 
-                ingredientsRecyclerView?.adapter = RecipeIngredientAdapter(ingredients)
-                stepsRecyclerView?.adapter = StepAdapter(steps)
+                ingredientsRecyclerView?.adapter = RecipeIngredientAdapter(ingredients!!)
+                stepsRecyclerView?.adapter = StepAdapter(steps!!)
             }
         }
 
@@ -218,6 +230,31 @@ class RecipeActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
         when (item?.itemId) {
+            R.id.recipe_share -> {
+                val file = File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "share_image_" +
+                    System.currentTimeMillis() + ".jpg")
+                val out = FileOutputStream(file)
+                recipeImageBitmap?.compress(Bitmap.CompressFormat.JPEG, 50, out)
+                out.close()
+                val bitmapUri = Uri.fromFile(file)
+
+                val shareText = "${dishTextView?.text}\n\n" +
+                        "${caloriesTextView?.text}\n${servingsTextView?.text}\n" +
+                        "Время приготовления: ${cookingTimeTextView?.text}\n\n" +
+                        ingredients?.fold("", {s, it ->
+                            s + "${it.ingredient} - ${it.ingredientCount} ${it.unit}\n"
+                        }) + "\n" +
+                        steps?.fold("", {s, it ->
+                            s + "${it.stepNumber}. ${it.description}\n"
+                        })
+
+                val intent = Intent(Intent.ACTION_SEND)
+                intent.type = "image/*"
+                intent.putExtra(Intent.EXTRA_SUBJECT, dishTextView?.text.toString())
+                intent.putExtra(Intent.EXTRA_TEXT, shareText)
+                intent.putExtra(Intent.EXTRA_STREAM, bitmapUri)
+                startActivity(Intent.createChooser(intent, resources.getString(R.string.share_using)))
+            }
             R.id.recipe_edit -> {
                 val intent = Intent(this, EditRecipeActivity::class.java)
                 intent.putExtra(EditRecipeActivity.EXTRA_MODE, EditRecipeActivity.Mode.EDITING.name)
