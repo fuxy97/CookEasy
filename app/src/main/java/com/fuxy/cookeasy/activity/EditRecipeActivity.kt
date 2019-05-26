@@ -229,6 +229,8 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
         applyButton?.setOnClickListener {
             dishTextInputLayout?.isErrorEnabled = false
             descriptionTextInputLayout?.isErrorEnabled = false
+            caloriesTextInputLayout?.isErrorEnabled = false
+            servingsTextInputLayout?.isErrorEnabled = false
 
             if (dishEditText != null && dishEditText!!.text.isBlank()) {
                 errorMessageTextView?.visibility = View.VISIBLE
@@ -247,6 +249,20 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
                 errorMessageTextView?.visibility = View.VISIBLE
                 errorMessageTextView?.text = resources.getString(R.string.add_ingredient_error)
                 descriptionTextInputLayout?.error = resources.getString(R.string.enter_description_error)
+                return@setOnClickListener
+            }
+
+            if (caloriesEditText != null && caloriesEditText!!.text.isBlank()) {
+                errorMessageTextView?.visibility = View.VISIBLE
+                errorMessageTextView?.text = resources.getString(R.string.add_ingredient_error)
+                caloriesTextInputLayout?.error = resources.getString(R.string.enter_calories_error)
+                return@setOnClickListener
+            }
+
+            if (servingsEditText != null && servingsEditText!!.text.isBlank()) {
+                errorMessageTextView?.visibility = View.VISIBLE
+                errorMessageTextView?.text = resources.getString(R.string.add_ingredient_error)
+                servingsTextInputLayout?.error = resources.getString(R.string.enter_servings_error)
                 return@setOnClickListener
             }
 
@@ -330,7 +346,7 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
                     noConnectionLinearLayout?.visibility = View.VISIBLE
                 }
             }.invokeOnCompletion {
-                GlobalScope.launch(Dispatchers.Main) { retryButton?.isEnabled = true }
+                GlobalScope.launch(Main) { retryButton?.isEnabled = true }
             }
         }
     }

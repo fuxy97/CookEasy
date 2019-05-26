@@ -39,10 +39,13 @@ object RecipeActivityConstants {
 enum class RecipeState { EDITED, DELETED, DEFAULT }
 
 class RecipeActivity : AppCompatActivity() {
+    private var dishTypeTextView: TextView? = null
     private var dishTextView: TextView? = null
     private var dishImageView: ImageView? = null
     private var descriptionTextView: TextView? = null
     private var cookingTimeTextView: TextView? = null
+    private var caloriesTextView: TextView? = null
+    private var servingsTextView: TextView? = null
     private var ingredientsRecyclerView: RecyclerView? = null
     private var stepsRecyclerView: RecyclerView? = null
     private var recipeId: Int = -1
@@ -68,6 +71,7 @@ class RecipeActivity : AppCompatActivity() {
         timeout = PreferenceManager.getDefaultSharedPreferences(this)
             ?.getString(PreferenceKeys.KEY_PREF_TIMEOUT, "0")?.toInt()
 
+        dishTypeTextView = findViewById(R.id.tv_dish_type)
         dishTextView = findViewById(R.id.tv_dish)
         dishImageView = findViewById(R.id.iv_dish_image)
         descriptionTextView = findViewById(R.id.tv_description)
@@ -75,6 +79,8 @@ class RecipeActivity : AppCompatActivity() {
         stepsRecyclerView = findViewById(R.id.rv_steps)
         recipeNestedScrollView = findViewById(R.id.nsv_recipe)
         cookingTimeTextView = findViewById(R.id.tv_cooking_time)
+        caloriesTextView = findViewById(R.id.tv_calories)
+        servingsTextView = findViewById(R.id.tv_servings)
         ratingBar = findViewById(R.id.rb_rating)
         noConnectionLinearLayout = findViewById(R.id.ll_no_connection)
         retryButton = findViewById(R.id.btn_retry)
@@ -90,7 +96,7 @@ class RecipeActivity : AppCompatActivity() {
         recipeNestedScrollView?.setOnScrollChangeListener { v: NestedScrollView?, _: Int, scrollY: Int,
                                                             _: Int, _: Int ->
             if (v != null) {
-                if (scrollY >= dishTextView!!.measuredHeight + 40) {
+                if (scrollY >= dishTextView!!.measuredHeight + dishTypeTextView!!.measuredHeight + 80) {
                     if (!isTitleShowed) {
                         isTitleShowed = true
                         supportActionBar?.setDisplayShowTitleEnabled(true)
@@ -168,16 +174,29 @@ class RecipeActivity : AppCompatActivity() {
             val recipeDao = AppDatabase.getInstance(applicationContext)!!.recipeDao()
             val recipeIngredientDao = AppDatabase.getInstance(applicationContext)!!.recipeIngredientDao()
             val stepDao = AppDatabase.getInstance(applicationContext)!!.stepDao()
+            val dishTypeDao = AppDatabase.getInstance(applicationContext)!!.dishTypeDao()
 
             val recipe = recipeDao.getById(recipeId)
             val ingredients = recipeIngredientDao.getByRecipeIdWithIngredientAndUnit(recipeId)
             val steps = stepDao.getByRecipeId(recipeId)
+            val dishType = dishTypeDao.getById(recipe.dishTypeId)
 
             GlobalScope.launch(Dispatchers.Main) {
                 supportActionBar?.title = recipe.dish
+                dishTypeTextView?.text = dishType.dishType
                 dishTextView?.text = recipe.dish
                 dishImageView?.setImageBitmap(recipe.bucketImage.bitmap)
                 descriptionTextView?.text = recipe.description
+                caloriesTextView?.text = "${recipe.calories} " + when {
+                    recipe.calories == 1 -> "калория"
+                    recipe.calories in 2..4 -> "калории"
+                    else -> "калорий"
+                }
+                servingsTextView?.text = "${recipe.servings} " + when {
+                    recipe.servings == 1 -> "персона"
+                    recipe.servings in 2..4 -> "персоны"
+                    else -> "персон"
+                }
                 ratingBar?.rating = recipe.rating
 
                 if (recipe.cookingTime.hour > 0)

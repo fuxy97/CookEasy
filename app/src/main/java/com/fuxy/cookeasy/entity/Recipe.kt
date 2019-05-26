@@ -11,7 +11,8 @@ import org.threeten.bp.LocalTime
     ForeignKey(entity = DishType::class,
         parentColumns = ["id"],
         childColumns = ["dish_type_id"],
-        onDelete = ForeignKey.SET_NULL
+        onDelete = ForeignKey.RESTRICT,
+        onUpdate = ForeignKey.CASCADE
     )]
 )
 data class Recipe(
@@ -20,7 +21,7 @@ data class Recipe(
     @ColumnInfo(name = "cooking_time") val cookingTime: LocalTime,
     @ColumnInfo(name = "bucket_image_absolute_path") val bucketImage: BucketImageObject,
     val description: String,
-    @ColumnInfo(name = "dish_type_id") val dishTypeId: Int? = null,
+    @ColumnInfo(name = "dish_type_id") val dishTypeId: Int,
     val servings: Int,
     val calories: Int,
     val rating: Float = 0.0f

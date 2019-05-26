@@ -55,13 +55,30 @@
             android:layout_height="wrap_content">
 
             <TextView
+                android:id="@+id/tv_dish_type"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp"
+                android:textColor="@android:color/black"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:paddingTop="5dp"
+                android:paddingBottom="5dp"
+                android:background="@drawable/dish_type_background"
+                android:layout_marginBottom="10dp" />
+
+            <TextView
                 android:id="@+id/tv_dish"
                 android:textSize="22sp"
                 android:textColor="@android:color/black"
                 android:textStyle="bold"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="20dp" />
+                android:layout_marginBottom="20dp"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp" />
 
             <FrameLayout
                 android:layout_width="match_parent"
@@ -81,15 +98,48 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
 
-            <TextView
+            <LinearLayout
+                android:orientation="horizontal"
                 android:layout_marginStart="20dp"
                 android:layout_marginEnd="20dp"
-                android:drawableStart="@drawable/ic_time"
-                android:drawablePadding="10dp"
-                android:gravity="center_vertical"
-                android:id="@+id/tv_cooking_time"
+                android:layout_marginBottom="20dp"
+                android:divider="@drawable/divider1dp"
+                android:showDividers="middle"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content">
+
+                <FrameLayout
+                    android:layout_weight="1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:drawableStart="@drawable/ic_time"
+                        android:drawablePadding="10dp"
+                        android:layout_gravity="center_horizontal"
+                        android:gravity="center_vertical"
+                        android:id="@+id/tv_cooking_time"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/tv_calories"
+                    android:gravity="center"
+                    android:layout_weight="1"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent" />
+
+                <TextView
+                    android:id="@+id/tv_servings"
+                    android:gravity="center"
+                    android:layout_weight="1"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent" />
+
+            </LinearLayout>
+
 
             <TextView
                 android:layout_marginTop="20dp"

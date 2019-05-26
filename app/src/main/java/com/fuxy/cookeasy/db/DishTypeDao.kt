@@ -10,6 +10,9 @@ interface DishTypeDao {
     @Query("SELECT * FROM dish_type")
     fun getAll(): List<DishType>
 
+    @Query("SELECT * FROM dish_type WHERE id = :id")
+    fun getById(id: Int): DishType
+
     @Insert
     fun insert(vararg dishType: DishType): List<Long>
 }
