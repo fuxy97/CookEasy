@@ -18,6 +18,12 @@
     <string name="filter_error">Необходимо заполнить все поля! Если Вы не заполнили поля в ингредиентах, то можно
         удалить эти ингредиенты.
     </string>
+    <string name="filter_range_error">Ошибка! Неправильные значения в диапазоне или заполните пустые выделенные поля.
+    </string>
+    <string name="filter_calories_from_error">Начальное значение калорий должно быть меньше или равно конечному</string>
+    <string name="filter_calories_to_error">Конечное значение калорий должно быть больше или равно начальному</string>
+    <string name="filter_servings_from_error">Начальное количество персон должно быть меньше или равно конечному</string>
+    <string name="filter_servings_to_error">Конечное количество персон должно быть больше или равно начальному</string>
     <string name="sort_by">Сортировать по</string>
     <string name="dish_name">Название блюда</string>
     <string name="upload_photo">Загрузить фото</string>
@@ -60,6 +66,7 @@
     <string name="enter_servings_error">Введите количество персон</string>
     <string name="dish_type">Тип блюда</string>
     <string name="select_dish_type">Выберите тип блюда…</string>
+    <string name="select_dish_type_no_selection">Не выбран</string>
     <string name="select_dish_type_title">Выберите тип блюда</string>
     <string name="whooops">Ууупс</string>
     <string name="no_internet_connection_message">Нет интернет соединения.\nПожалуйста проверьте настройки подключения.
@@ -99,6 +106,8 @@
     <string name="enter_ingredient">Введите ингредиент…</string>
     <string name="enter_ingredient_error">Введите ингредиент</string>
     <string name="range_time_error_message">Вы должны выбрать начальное время в диапазоне</string>
+    <string name="calories">Калории</string>
+    <string name="servings">Количество персон</string>
 
     <string-array name="sort_options">
         <item>Названию блюда (возрастание)</item>

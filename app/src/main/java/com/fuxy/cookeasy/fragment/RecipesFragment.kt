@@ -49,6 +49,16 @@ class RecipesFragment : Fragment() {
         @JvmField
         val EXTRA_FILTER_RESULT_INGREDIENTS = "filter_result_ingredients"
         @JvmField
+        val EXTRA_FILTER_RESULT_DISH_TYPE_ID = "filter_result_dish_type_id"
+        @JvmField
+        val EXTRA_FILTER_RESULT_FROM_CALORIES = "filter_result_from_calories"
+        @JvmField
+        val EXTRA_FILTER_RESULT_TO_CALORIES = "filter_result_to_calories"
+        @JvmField
+        val EXTRA_FILTER_RESULT_FROM_SERVINGS = "filter_result_from_servings"
+        @JvmField
+        val EXTRA_FILTER_RESULT_TO_SERVINGS = "filter_result_to_servings"
+        @JvmField
         val EXTRA_FILTER_RESULT_FROM_TIME_HOUR = "filter_result_from_time_hour"
         @JvmField
         val EXTRA_FILTER_RESULT_FROM_TIME_MINUTE = "filter_result_from_time_minute"
@@ -120,7 +130,7 @@ class RecipesFragment : Fragment() {
 
         GlobalScope.launch {
             if (isNetworkConnected(context!!) && isOnline(timeout!!)) {
-                withContext(Dispatchers.IO) {
+                withContext(IO) {
                     val recipeDao = AppDatabase.getInstance(view.context)!!.recipeDao()
                     recipes = recipeDao.rawQuery(
                         SimpleSQLiteQuery(
@@ -353,7 +363,7 @@ class RecipesFragment : Fragment() {
 
     private suspend fun runQueryAndUpdateAdapter(offset: Int, pageSize: Int) {
         if (isNetworkConnected(context!!) && isOnline(timeout!!)) {
-            withContext(Dispatchers.IO) {
+            withContext(IO) {
                 val recipe = AppDatabase.getInstance(context!!)?.recipeDao()
                 val newRecipes = recipe!!.rawQuery(
                     SimpleSQLiteQuery(
@@ -381,6 +391,11 @@ class RecipesFragment : Fragment() {
             FILTER_RECIPES_REQUEST -> {
                 if (resultCode == RESULT_OK) {
                     filterBundle = data?.extras
+                    val dishTypeId = data?.getIntExtra(EXTRA_FILTER_RESULT_DISH_TYPE_ID, 0)
+                    val fromCalories = data?.getIntExtra(EXTRA_FILTER_RESULT_FROM_CALORIES, -1)
+                    val toCalories = data?.getIntExtra(EXTRA_FILTER_RESULT_TO_CALORIES, -1)
+                    val fromServings = data?.getIntExtra(EXTRA_FILTER_RESULT_FROM_SERVINGS, -1)
+                    val toServings = data?.getIntExtra(EXTRA_FILTER_RESULT_TO_SERVINGS, -1)
                     val timeFromHour = data?.getIntExtra(EXTRA_FILTER_RESULT_FROM_TIME_HOUR, -1)
                     val timeFromMinute = data?.getIntExtra(EXTRA_FILTER_RESULT_FROM_TIME_MINUTE, -1)
                     val timeToHour = data?.getIntExtra(EXTRA_FILTER_RESULT_TO_TIME_HOUR, -1)
@@ -448,9 +463,25 @@ class RecipesFragment : Fragment() {
                                             ""
                                         } +
                                                 "time('${LocalTimeConverter.fromLocalTime(timeTo)}')"
-                                    } else ""
+                                    } else {""} +
+                                    if (fromCalories != null && fromCalories >= 0 &&
+                                                  toCalories != null && toCalories >= 0)
+                                    " AND recipe.calories BETWEEN $fromCalories AND $toCalories"
+                                    else if (toCalories != null && toCalories >= 0)
+                                    " AND recipe.calories = $toCalories"
+                                    else {""} +
+                                    if (fromServings != null && fromServings >= 0 &&
+                                        toServings != null && toServings >= 0)
+                                        " AND recipe.servings BETWEEN $fromServings AND $toServings"
+                                    else if (toServings != null && toServings >= 0)
+                                        " AND recipe.servings = $toServings"
+                                    else {""} +
+                                    if (dishTypeId != null && dishTypeId > 0) {
+                                        " AND recipe.dish_type_id = $dishTypeId"
+                                    } else {""}
+
                         } else {
-                            query = "SELECT * FROM recipe " +
+                            query = "SELECT * FROM recipe" +
                                     if (timeFrom != null) " WHERE time(recipe.cooking_time) BETWEEN " +
                                             "time('${LocalTimeConverter.fromLocalTime(timeFrom)}')" else {
                                         ""
@@ -458,7 +489,31 @@ class RecipesFragment : Fragment() {
                                     if (timeTo != null) {
                                         if (timeFrom == null) {" WHERE time(recipe.cooking_time) = "} else {" AND "} +
                                                 "time('${LocalTimeConverter.fromLocalTime(timeTo)}')"
-                                    } else ""
+                                    } else {""} +
+                                    if (fromCalories != null && fromCalories >= 0 &&
+                                        toCalories != null && toCalories >= 0)
+                                        if (timeTo != null) " AND" else {" WHERE"} +
+                                        " recipe.calories BETWEEN $fromCalories AND $toCalories"
+                                    else if (toCalories != null && toCalories >= 0)
+                                        if (timeTo != null) " AND" else {" WHERE"} +
+                                        " recipe.calories = $toCalories"
+                                    else {""} +
+                                    if (fromServings != null && fromServings >= 0 &&
+                                        toServings != null && toServings >= 0)
+                                        if (timeTo != null || toCalories != null && toCalories >= 0) " AND"
+                                        else {" WHERE"} +
+                                        " recipe.servings BETWEEN $fromServings AND $toServings"
+                                    else if (toServings != null && toServings >= 0)
+                                        if (timeTo != null || toCalories != null && toCalories >= 0) " AND"
+                                        else {" WHERE"} +
+                                        " recipe.servings = $toServings"
+                                    else {""} +
+                                    if (dishTypeId != null && dishTypeId > 0) {
+                                        if (timeTo != null || toCalories != null && toCalories >= 0 ||
+                                            toServings != null && toServings >= 0) " AND"
+                                        else {" WHERE"} +
+                                        " recipe.dish_type_id = $dishTypeId"
+                                    } else {""}
                         }
 
                         GlobalScope.launch {

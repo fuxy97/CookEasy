@@ -20,9 +20,12 @@ import com.fuxy.cookeasy.db.AppDatabase
 import com.fuxy.cookeasy.dialogfragment.AddIngredientDialogFragment
 import com.fuxy.cookeasy.dialogfragment.AddIngredientDialogFragmentConstants
 import com.fuxy.cookeasy.dialogfragment.AddIngredientDialogMode
+import com.fuxy.cookeasy.entity.DishType
 import com.fuxy.cookeasy.entity.IngredientFilter
 import com.fuxy.cookeasy.entity.ParcelableIngredientFilter
 import com.fuxy.cookeasy.fragment.RecipesFragment
+import com.google.android.material.textfield.TextInputLayout
+import com.toptoche.searchablespinnerlibrary.SearchableSpinner
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.GlobalScope
@@ -52,6 +55,21 @@ class FilterActivity : AppCompatActivity(), AddIngredientDialogFragment.AddIngre
     private var timeOptionSpinner: Spinner? = null
     private var errorMessageTextView: TextView? = null
     private var isTimeOptionSwitched = false
+    private var dishTypeSearchableSpinner: SearchableSpinner? = null
+    private var fromCaloriesTextView: TextView? = null
+    private var fromCaloriesEditText: EditText? = null
+    private var fromCaloriesTextInputLayout: TextInputLayout? = null
+    private var toCaloriesTextView: TextView? = null
+    private var toCaloriesEditText: EditText? = null
+    private var toCaloriesTextInputLayout: TextInputLayout? = null
+    private var caloriesOptionSpinner: Spinner? = null
+    private var fromServingsTextView: TextView? = null
+    private var fromServingsEditText: EditText? = null
+    private var fromServingsTextInputLayout: TextInputLayout? = null
+    private var toServingsTextView: TextView? = null
+    private var toServingsEditText: EditText? = null
+    private var toServingsTextInputLayout: TextInputLayout? = null
+    private var servingsOptionSpinner: Spinner? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,6 +77,11 @@ class FilterActivity : AppCompatActivity(), AddIngredientDialogFragment.AddIngre
         setTitle(R.string.filters)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
+        val dishTypeId = intent.getIntExtra(RecipesFragment.EXTRA_FILTER_RESULT_DISH_TYPE_ID, 0)
+        val fromCalories = intent.getIntExtra(RecipesFragment.EXTRA_FILTER_RESULT_FROM_CALORIES, -1)
+        val toCalories = intent.getIntExtra(RecipesFragment.EXTRA_FILTER_RESULT_TO_CALORIES, -1)
+        val fromServings = intent.getIntExtra(RecipesFragment.EXTRA_FILTER_RESULT_FROM_SERVINGS, -1)
+        val toServings = intent.getIntExtra(RecipesFragment.EXTRA_FILTER_RESULT_TO_SERVINGS, -1)
         val fromTimeHour = intent.getIntExtra(RecipesFragment.EXTRA_FILTER_RESULT_FROM_TIME_HOUR, -1)
         val fromTimeMinute = intent.getIntExtra(RecipesFragment.EXTRA_FILTER_RESULT_FROM_TIME_MINUTE, -1)
         val toTimeHour = intent.getIntExtra(RecipesFragment.EXTRA_FILTER_RESULT_TO_TIME_HOUR, -1)
@@ -81,6 +104,21 @@ class FilterActivity : AppCompatActivity(), AddIngredientDialogFragment.AddIngre
         toCookingTimeTextView = findViewById(R.id.tv_to_cooking_time)
         timeOptionSpinner = findViewById(R.id.sp_time_option)
         errorMessageTextView = findViewById(R.id.tv_error_message)
+        dishTypeSearchableSpinner = findViewById(R.id.sp_dish_type)
+        caloriesOptionSpinner = findViewById(R.id.sp_calories_option)
+        fromCaloriesTextView = findViewById(R.id.tv_from_calories)
+        fromCaloriesTextInputLayout = findViewById(R.id.til_from_calories)
+        fromCaloriesEditText = findViewById(R.id.et_from_calories)
+        toCaloriesTextView = findViewById(R.id.tv_to_calories)
+        toCaloriesTextInputLayout = findViewById(R.id.til_to_calories)
+        toCaloriesEditText = findViewById(R.id.et_to_calories)
+        servingsOptionSpinner = findViewById(R.id.sp_servings_option)
+        fromServingsTextView = findViewById(R.id.tv_from_servings)
+        fromServingsTextInputLayout = findViewById(R.id.til_from_servings)
+        fromServingsEditText = findViewById(R.id.et_from_servings)
+        toServingsTextView = findViewById(R.id.tv_to_servings)
+        toServingsTextInputLayout = findViewById(R.id.til_to_servings)
+        toServingsEditText = findViewById(R.id.et_to_servings)
 
         timeOptionSpinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
@@ -117,6 +155,52 @@ class FilterActivity : AppCompatActivity(), AddIngredientDialogFragment.AddIngre
             }
         }
 
+        caloriesOptionSpinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                when (position) {
+                    0 -> {
+                        toCaloriesTextView?.visibility = View.GONE
+                        fromCaloriesTextView?.visibility = View.GONE
+                        fromCaloriesTextInputLayout?.visibility = View.GONE
+                        fromCaloriesEditText?.text = null
+                    }
+                    1 -> {
+                        toCaloriesTextView?.visibility = View.VISIBLE
+                        fromCaloriesTextView?.visibility = View.VISIBLE
+                        fromCaloriesTextInputLayout?.visibility = View.VISIBLE
+                    }
+                }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                return
+            }
+
+        }
+
+        servingsOptionSpinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                when (position) {
+                    0 -> {
+                        toServingsTextView?.visibility = View.GONE
+                        fromServingsTextView?.visibility = View.GONE
+                        fromServingsTextInputLayout?.visibility = View.GONE
+                        fromServingsEditText?.text = null
+                    }
+                    1 -> {
+                        toServingsTextView?.visibility = View.VISIBLE
+                        fromServingsTextView?.visibility = View.VISIBLE
+                        fromServingsTextInputLayout?.visibility = View.VISIBLE
+                    }
+                }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                return
+            }
+
+        }
+
         if (fromTimeHour >= 0 && fromTimeMinute >= 0) {
             timeOptionSpinner?.setSelection(1)
             fromCookingLocalTime = LocalTime.of(fromTimeHour, fromTimeMinute)
@@ -136,9 +220,29 @@ class FilterActivity : AppCompatActivity(), AddIngredientDialogFragment.AddIngre
                 toCookingTimeTextView?.text = minuteTimeFormatter.format(toCookingLocalTime)
         }
 
+        if (fromCalories >= 0) {
+            caloriesOptionSpinner?.setSelection(1)
+            fromCaloriesEditText?.setText(fromCalories.toString())
+        }
+
+        if (toCalories >= 0) {
+            toCaloriesEditText?.setText(toCalories.toString())
+        }
+
+        if (fromServings >= 0) {
+            servingsOptionSpinner?.setSelection(1)
+            fromServingsEditText?.setText(fromServings.toString())
+        }
+
+        if (toServings >= 0) {
+            toServingsEditText?.setText(toServings.toString())
+        }
+
         GlobalScope.launch(IO) {
             val ingredientDao = AppDatabase.getInstance(this@FilterActivity)?.ingredientDao()
             val unitDao = AppDatabase.getInstance(this@FilterActivity)?.unitDao()
+            val dishTypeDao = AppDatabase.getInstance(this@FilterActivity)?.dishTypeDao()
+            val dishTypes = dishTypeDao?.getAll()?.toMutableList()
 
             if (ingredientList != null) {
                 for (i in ingredientList) {
@@ -156,6 +260,24 @@ class FilterActivity : AppCompatActivity(), AddIngredientDialogFragment.AddIngre
             GlobalScope.launch(Main) {
                 ingredientsAdapter = IngredientFilterAdapter(/*this, */ingredients)
                 ingredientsRecyclerView?.adapter = ingredientsAdapter
+
+                dishTypes?.add(0, DishType(
+                    id = 0,
+                    dishType = resources.getString(R.string.select_dish_type_no_selection)
+                ))
+                val dishTypeAdapter = ArrayAdapter(
+                    this@FilterActivity, android.R.layout.simple_list_item_1, dishTypes!!
+                )
+                dishTypeSearchableSpinner?.adapter = dishTypeAdapter
+
+                if (dishTypeId >= 0) {
+                    for (i in 0 until dishTypeAdapter.count) {
+                        if (dishTypeAdapter.getItem(i)!!.id == dishTypeId) {
+                            dishTypeSearchableSpinner?.setSelection(i)
+                            break
+                        }
+                    }
+                }
             }
         }
         ingredientsRecyclerView?.layoutManager = LinearLayoutManager(this)
@@ -225,14 +347,54 @@ class FilterActivity : AppCompatActivity(), AddIngredientDialogFragment.AddIngre
                     return@setOnClickListener
                 }
             }*/
+            fromCaloriesTextInputLayout?.isErrorEnabled = false
+            toCaloriesTextInputLayout?.isErrorEnabled = false
+            fromServingsTextInputLayout?.isErrorEnabled = false
+            toServingsTextInputLayout?.isErrorEnabled = false
+
             if (timeOptionSpinner?.selectedItemPosition == 1 && fromCookingLocalTime == null
                 && toCookingLocalTime != null) {
+                errorMessageTextView?.text = resources.getString(R.string.range_time_error_message)
                 errorMessageTextView?.visibility = View.VISIBLE
                 fromCookingTimeTextView?.setTextColor(resources.getColor(android.R.color.holo_red_light))
                 return@setOnClickListener
             }
 
+            val fromCalories = fromCaloriesEditText?.text?.toString()?.toIntOrNull()
+            val toCalories = toCaloriesEditText?.text?.toString()?.toIntOrNull()
+
+            if (caloriesOptionSpinner?.selectedItemPosition == 1 && (fromCalories == null && toCalories != null ||
+                        fromCalories != null && toCalories == null) ||
+                toCalories != null && fromCalories != null && toCalories < fromCalories) {
+                errorMessageTextView?.text = resources.getString(R.string.filter_range_error)
+                errorMessageTextView?.visibility = View.VISIBLE
+                fromCaloriesTextInputLayout?.error = resources.getString(R.string.filter_calories_from_error)
+                toCaloriesTextInputLayout?.error = resources.getString(R.string.filter_calories_to_error)
+                return@setOnClickListener
+            }
+
+            val fromServings = fromServingsEditText?.text?.toString()?.toIntOrNull()
+            val toServings = toServingsEditText?.text?.toString()?.toIntOrNull()
+
+            if (servingsOptionSpinner?.selectedItemPosition == 1 && (fromServings == null && toServings != null ||
+                        fromServings != null && toServings == null) ||
+                toServings != null && fromServings != null && toServings < fromServings) {
+                errorMessageTextView?.text = resources.getString(R.string.filter_range_error)
+                errorMessageTextView?.visibility = View.VISIBLE
+                fromServingsTextInputLayout?.error = resources.getString(R.string.filter_servings_from_error)
+                toServingsTextInputLayout?.error = resources.getString(R.string.filter_servings_to_error)
+                return@setOnClickListener
+            }
+
+            val dishType = (dishTypeSearchableSpinner?.selectedItem as DishType)
+
             val returnIntent = Intent()
+            returnIntent.putExtra(RecipesFragment.EXTRA_FILTER_RESULT_DISH_TYPE_ID,
+                if (dishType.id == 0) null else dishType.id)
+            returnIntent.putExtra(RecipesFragment.EXTRA_FILTER_RESULT_FROM_CALORIES, fromCalories)
+            returnIntent.putExtra(RecipesFragment.EXTRA_FILTER_RESULT_TO_CALORIES, toCalories)
+            returnIntent.putExtra(RecipesFragment.EXTRA_FILTER_RESULT_FROM_SERVINGS, fromServings)
+            returnIntent.putExtra(RecipesFragment.EXTRA_FILTER_RESULT_TO_SERVINGS, toServings)
             returnIntent.putExtra(RecipesFragment.EXTRA_FILTER_RESULT_FROM_TIME_HOUR, fromCookingLocalTime?.hour)
             returnIntent.putExtra(RecipesFragment.EXTRA_FILTER_RESULT_FROM_TIME_MINUTE, fromCookingLocalTime?.minute)
             returnIntent.putExtra(RecipesFragment.EXTRA_FILTER_RESULT_TO_TIME_HOUR, toCookingLocalTime?.hour)
@@ -252,6 +414,11 @@ class FilterActivity : AppCompatActivity(), AddIngredientDialogFragment.AddIngre
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
         return when(item?.itemId) {
             R.id.filters_clear -> {
+                dishTypeSearchableSpinner?.setSelection(0)
+                caloriesOptionSpinner?.setSelection(0)
+                toCaloriesEditText?.text = null
+                servingsOptionSpinner?.setSelection(0)
+                toServingsEditText?.text = null
                 fromCookingLocalTime = null
                 toCookingLocalTime = null
                 fromCookingTimeTextView?.text = resources.getString(R.string.choose_time)

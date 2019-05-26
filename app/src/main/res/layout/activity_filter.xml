@@ -1,17 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<androidx.core.widget.NestedScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:divider="@drawable/divider10dp"
-    android:showDividers="middle"
-    android:padding="20dp"
-    tools:context=".activity.FilterActivity">
+    android:layout_height="match_parent">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:divider="@drawable/divider10dp"
+        android:showDividers="middle"
+        android:padding="20dp"
+        tools:context=".activity.FilterActivity">
 
-    <TextView
+        <TextView
             android:id="@+id/tv_error_message"
             android:textColor="@android:color/holo_red_dark"
             android:text="@string/range_time_error_message"
@@ -20,77 +23,206 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
-    <TextView
-        android:text="@string/cooking_time"
-        android:textColor="@android:color/black"
-        android:textSize="16sp"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        <TextView
+            android:text="@string/dish_type"
+            android:textColor="@android:color/black"
+            android:textSize="16sp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
 
-    <Spinner
-        android:id="@+id/sp_time_option"
-        android:entries="@array/time_options"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        <com.toptoche.searchablespinnerlibrary.SearchableSpinner
+            android:id="@+id/sp_dish_type"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
 
-    <TextView
-        android:id="@+id/tv_from"
-        android:text="@string/from"
-        android:visibility="gone"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+        <TextView
+            android:text="@string/calories"
+            android:textColor="@android:color/black"
+            android:textSize="16sp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
 
-    <TextView
-        android:textSize="16sp"
-        android:visibility="gone"
-        android:id="@+id/tv_from_cooking_time"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/choose_time"
-        tools:ignore="Autofill,LabelFor" />
+        <Spinner
+            android:id="@+id/sp_calories_option"
+            android:entries="@array/time_options"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
 
-    <TextView
-        android:id="@+id/tv_to"
-        android:text="@string/to"
-        android:visibility="gone"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+        <TextView
+            android:id="@+id/tv_from_calories"
+            android:text="@string/from"
+            android:visibility="gone"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
 
-    <TextView
-        android:textSize="16sp"
-        android:id="@+id/tv_to_cooking_time"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/choose_time"
-        android:layout_marginBottom="10dp"
-        tools:ignore="Autofill,LabelFor" />
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_from_calories"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:errorEnabled="true"
+            android:visibility="gone">
 
-    <TextView
-        android:textColor="@android:color/black"
-        android:textSize="16sp"
-        android:text="@string/ingredients"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_from_calories"
+                android:hint="@string/enter_calories"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number" />
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_ingredients"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        </com.google.android.material.textfield.TextInputLayout>
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_add_ingredient"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:cornerRadius="30dp"
-        android:backgroundTint="@android:color/darker_gray"
-        android:textAllCaps="false"
-        android:textColor="@android:color/black"
-        android:text="@string/add_ingredient" />
+        <TextView
+            android:id="@+id/tv_to_calories"
+            android:text="@string/to"
+            android:visibility="gone"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
 
-    <Button
-        android:id="@+id/btn_apply"
-        android:text="@string/apply"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_to_calories"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:errorEnabled="true">
 
-</LinearLayout>
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_to_calories"
+                android:hint="@string/enter_calories"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <TextView
+            android:text="@string/servings"
+            android:textColor="@android:color/black"
+            android:textSize="16sp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <Spinner
+            android:id="@+id/sp_servings_option"
+            android:entries="@array/time_options"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/tv_from_servings"
+            android:text="@string/from"
+            android:visibility="gone"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_from_servings"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:errorEnabled="true"
+            android:visibility="gone">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_from_servings"
+                android:hint="@string/enter_servings"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <TextView
+            android:id="@+id/tv_to_servings"
+            android:text="@string/to"
+            android:visibility="gone"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_to_servings"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:errorEnabled="true">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_to_servings"
+                android:hint="@string/enter_servings"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <TextView
+            android:text="@string/cooking_time"
+            android:textColor="@android:color/black"
+            android:textSize="16sp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <Spinner
+            android:id="@+id/sp_time_option"
+            android:entries="@array/time_options"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/tv_from"
+            android:text="@string/from"
+            android:visibility="gone"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:textSize="16sp"
+            android:visibility="gone"
+            android:id="@+id/tv_from_cooking_time"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/choose_time"
+            tools:ignore="Autofill,LabelFor" />
+
+        <TextView
+            android:id="@+id/tv_to"
+            android:text="@string/to"
+            android:visibility="gone"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:textSize="16sp"
+            android:id="@+id/tv_to_cooking_time"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/choose_time"
+            android:layout_marginBottom="10dp"
+            tools:ignore="Autofill,LabelFor" />
+
+        <TextView
+            android:textColor="@android:color/black"
+            android:textSize="16sp"
+            android:text="@string/ingredients"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_ingredients"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_add_ingredient"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cornerRadius="30dp"
+            android:backgroundTint="@android:color/darker_gray"
+            android:textAllCaps="false"
+            android:textColor="@android:color/black"
+            android:text="@string/add_ingredient" />
+
+        <Button
+            android:id="@+id/btn_apply"
+            android:text="@string/apply"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>
