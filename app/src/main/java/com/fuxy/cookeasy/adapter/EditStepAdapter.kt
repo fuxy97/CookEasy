@@ -2,6 +2,7 @@ package com.fuxy.cookeasy.adapter
 
 import android.content.Context
 import android.text.Editable
+import android.text.InputFilter
 import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
@@ -45,6 +46,17 @@ abstract class EditStepAdapter(val steps: MutableList<EditStep>) : RecyclerView.
         private val popupMenu: PopupMenu = PopupMenu(context, itemView)
 
         init {
+            descriptionEditText.filters = arrayOf(InputFilter { source, start, end,
+                                                                dest, dstart, dend ->
+                for (i in start until end) {
+                    if (!Character.isLetterOrDigit(source[i]) && !Character.isSpaceChar(source[i]) &&
+                        source[i] != '"' && source[i] != '(' && source[i] != ')' && source[i] != '-' && source[i] != '!'
+                        && source[i] != '?' && source[i] != '.' && source[i] != ',')
+                        return@InputFilter ""
+                }
+                return@InputFilter null
+            })
+
             descriptionEditText.addTextChangedListener(object : TextWatcher {
                 override fun afterTextChanged(s: Editable?) {
                     steps[adapterPosition].description = descriptionEditText.text.toString()

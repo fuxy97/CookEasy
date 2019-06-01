@@ -29,14 +29,12 @@ import com.fuxy.cookeasy.entity.IngredientCountOption
 import com.fuxy.cookeasy.entity.ParcelableIngredientFilter
 import com.fuxy.cookeasy.entity.Recipe
 import com.fuxy.cookeasy.preference.PreferenceKeys
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.threeten.bp.LocalTime
 import java.lang.StringBuilder
+import java.net.SocketTimeoutException
 import kotlin.math.ceil
 
 class RecipesFragment : Fragment() {
@@ -89,6 +87,16 @@ class RecipesFragment : Fragment() {
     private var deviation: Double? = null
     private var filterBundle: Bundle? = null
     private var selectedSortOption: Int = 0
+    private val handleExceptionContext = Dispatchers.Default + CoroutineExceptionHandler { _, e ->
+        GlobalScope.launch(Main) {
+            if (e is SocketTimeoutException) {
+                recipesConstraintLayout?.visibility = View.GONE
+                noConnectionLinearLayout?.visibility = View.VISIBLE
+            } else {
+                throw e
+            }
+        }
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_recipes, container, false)
@@ -128,7 +136,7 @@ class RecipesFragment : Fragment() {
             }
         }
 
-        GlobalScope.launch {
+        GlobalScope.launch(handleExceptionContext) {
             if (isNetworkConnected(context!!) && isOnline(timeout!!)) {
                 withContext(IO) {
                     val recipeDao = AppDatabase.getInstance(view.context)!!.recipeDao()
@@ -139,19 +147,21 @@ class RecipesFragment : Fragment() {
                         )
                     ).toMutableList()
 
-                    launch(Dispatchers.Main) {
+                    launch(Main) {
                         adapter = RecipeAdapter(this@RecipesFragment, recipes!!)
                         recipeRecyclerView?.adapter = adapter
                     }
                 }
             } else {
-                recipesConstraintLayout?.visibility = View.GONE
-                noConnectionLinearLayout?.visibility = View.VISIBLE
+                withContext(Main) {
+                    recipesConstraintLayout?.visibility = View.GONE
+                    noConnectionLinearLayout?.visibility = View.VISIBLE
+                }
             }
         }
 
         retryButton?.setOnClickListener {
-            GlobalScope.launch {
+            GlobalScope.launch(handleExceptionContext) {
                 withContext(Main) { retryButton?.isEnabled = false }
 
                 if (isNetworkConnected(context!!) && isOnline(timeout!!)) {
@@ -183,8 +193,10 @@ class RecipesFragment : Fragment() {
                         }
                     }
                 } else {
-                    recipesConstraintLayout?.visibility = View.GONE
-                    noConnectionLinearLayout?.visibility = View.VISIBLE
+                    withContext(Main) {
+                        recipesConstraintLayout?.visibility = View.GONE
+                        noConnectionLinearLayout?.visibility = View.VISIBLE
+                    }
                 }
             }.invokeOnCompletion {
                 GlobalScope.launch(Main) { retryButton?.isEnabled = true }
@@ -238,12 +250,12 @@ class RecipesFragment : Fragment() {
                 if (query.isNotEmpty()) {
                     this@RecipesFragment.query = "SELECT * FROM recipe " +
                             "WHERE lower(dish) LIKE '%${query.toLowerCase()}%'"
-                    GlobalScope.launch {
+                    GlobalScope.launch(handleExceptionContext) {
                         runQueryAndUpdateAdapter(0, 10)
                     }
                 } else {
                     this@RecipesFragment.query = "SELECT * FROM recipe"
-                    GlobalScope.launch {
+                    GlobalScope.launch(handleExceptionContext) {
                         runQueryAndUpdateAdapter(0, 10)
                     }
                 }
@@ -340,7 +352,7 @@ class RecipesFragment : Fragment() {
                         order = "DESC"
                     }
                 }
-                GlobalScope.launch {
+                GlobalScope.launch(handleExceptionContext) {
                     runQueryAndUpdateAdapter(0, 10)
                 }
                 dialog.dismiss()
@@ -516,7 +528,7 @@ class RecipesFragment : Fragment() {
                                     } else {""}
                         }
 
-                        GlobalScope.launch {
+                        GlobalScope.launch(handleExceptionContext) {
                             runQueryAndUpdateAdapter(0, 10)
                         }
 

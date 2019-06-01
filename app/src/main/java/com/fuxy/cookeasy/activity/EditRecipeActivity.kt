@@ -6,6 +6,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.preference.PreferenceManager
+import android.text.InputFilter
 import android.view.MenuItem
 import android.view.View
 import android.widget.*
@@ -31,14 +32,12 @@ import com.fuxy.cookeasy.s3.putObjectToBucket
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.textfield.TextInputLayout
 import com.toptoche.searchablespinnerlibrary.SearchableSpinner
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.threeten.bp.LocalTime
 import org.threeten.bp.format.DateTimeFormatter
+import java.net.SocketTimeoutException
 
 class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddIngredientListener {
     enum class Mode { ADDING, EDITING }
@@ -100,6 +99,16 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
     private var noConnectionSnackbar: Snackbar? = null
     private var snackbarCoordinatorLayout: CoordinatorLayout? = null
     private var timeout: Int? = null
+    private val handleExceptionContext = Dispatchers.Default + CoroutineExceptionHandler { _, e ->
+        GlobalScope.launch(Main) {
+            if (e is SocketTimeoutException) {
+                noConnectionLinearLayout?.visibility = View.VISIBLE
+                editRecipeNestedScrollView?.visibility = View.GONE
+            } else {
+                throw e
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -147,7 +156,7 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
             resources.getString(R.string.no_connection_snackbar_message),
             Snackbar.LENGTH_LONG)
             .setAction(R.string.retry2) {
-                GlobalScope.launch(Main) {
+                GlobalScope.launch(handleExceptionContext) {
                     if (isNetworkConnected(this@EditRecipeActivity) && isOnline(
                             timeout!!
                         )
@@ -160,6 +169,27 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
         uploadImageLinearLayout?.setOnClickListener {
             startChoosePhotoActivity()
         }
+
+        dishEditText?.filters = arrayOf(InputFilter { source, start, end,
+                                                      dest, dstart, dend ->
+            for (i in start until end) {
+                if (!Character.isLetterOrDigit(source[i]) && !Character.isSpaceChar(source[i]) &&
+                        source[i] != '"' && source[i] != '(' && source[i] != ')' && source[i] != '-')
+                    return@InputFilter ""
+            }
+            return@InputFilter null
+        })
+
+        descriptionEditText?.filters = arrayOf(InputFilter { source, start, end,
+                                                      dest, dstart, dend ->
+            for (i in start until end) {
+                if (!Character.isLetterOrDigit(source[i]) && !Character.isSpaceChar(source[i]) &&
+                    source[i] != '"' && source[i] != '(' && source[i] != ')' && source[i] != '-' && source[i] != '!'
+                    && source[i] != '?' && source[i] != '.' && source[i] != ',')
+                    return@InputFilter ""
+            }
+            return@InputFilter null
+        })
 
         deletePhotoButton?.setOnClickListener {
             uploadImageLinearLayout?.visibility = View.VISIBLE
@@ -293,7 +323,7 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
                 }
             }
 
-            GlobalScope.launch {
+            GlobalScope.launch(handleExceptionContext) {
                 if (isNetworkConnected(this@EditRecipeActivity) && isOnline(timeout!!)) {
                     updateRecipe()
                 } else {
@@ -308,15 +338,17 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
             applyButton?.text = resources.getString(R.string.edit)
 
             if (recipeId!! > -1) {
-                GlobalScope.launch(IO) {
+                GlobalScope.launch(handleExceptionContext) {
                     if (isNetworkConnected(this@EditRecipeActivity) && isOnline(
                             timeout!!
                         )
                     ) {
-                        loadRecipe()
+                        withContext(IO) { loadRecipe() }
                     } else {
-                        noConnectionLinearLayout?.visibility = View.VISIBLE
-                        editRecipeNestedScrollView?.visibility = View.GONE
+                        withContext(Main) {
+                            noConnectionLinearLayout?.visibility = View.VISIBLE
+                            editRecipeNestedScrollView?.visibility = View.GONE
+                        }
                     }
                 }
             }
@@ -332,7 +364,7 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
         }
 
         retryButton?.setOnClickListener {
-            GlobalScope.launch {
+            GlobalScope.launch(handleExceptionContext) {
                 withContext(Main) { retryButton?.isEnabled = false }
 
                 if (isNetworkConnected(this@EditRecipeActivity) && isOnline(timeout!!)) {
@@ -340,10 +372,12 @@ class EditRecipeActivity : AppCompatActivity(), AddIngredientDialogFragment.AddI
                         editRecipeNestedScrollView?.visibility = View.VISIBLE
                         noConnectionLinearLayout?.visibility = View.GONE
                     }
-                    loadRecipe()
+                    withContext(IO) { loadRecipe() }
                 } else {
-                    editRecipeNestedScrollView?.visibility = View.GONE
-                    noConnectionLinearLayout?.visibility = View.VISIBLE
+                    withContext(Main) {
+                        editRecipeNestedScrollView?.visibility = View.GONE
+                        noConnectionLinearLayout?.visibility = View.VISIBLE
+                    }
                 }
             }.invokeOnCompletion {
                 GlobalScope.launch(Main) { retryButton?.isEnabled = true }

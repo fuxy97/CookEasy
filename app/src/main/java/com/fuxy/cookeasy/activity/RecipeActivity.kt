@@ -29,13 +29,11 @@ import com.fuxy.cookeasy.entity.Step
 import com.fuxy.cookeasy.isNetworkConnected
 import com.fuxy.cookeasy.isOnline
 import com.fuxy.cookeasy.preference.PreferenceKeys
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import org.threeten.bp.format.DateTimeFormatter
 import java.io.File
 import java.io.FileOutputStream
+import java.net.SocketTimeoutException
 
 object RecipeActivityConstants {
     const val EXTRA_RECIPE_ID = "recipe_id"
@@ -71,6 +69,16 @@ class RecipeActivity : AppCompatActivity() {
     private var recipeImageBitmap: Bitmap? = null
     private var ingredients: List<RecipeIngredientUnitIngredient>? = null
     private var steps: List<Step>? = null
+    private val handleExceptionContext = Dispatchers.Default + CoroutineExceptionHandler { _, e ->
+        GlobalScope.launch(Dispatchers.Main) {
+            if (e is SocketTimeoutException) {
+                recipeNestedScrollView?.visibility = View.GONE
+                noConnectionLinearLayout?.visibility = View.VISIBLE
+            } else {
+                throw e
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -131,12 +139,14 @@ class RecipeActivity : AppCompatActivity() {
         recipeId = intent.getIntExtra(RecipeActivityConstants.EXTRA_RECIPE_ID, -1)
 
         if (recipeId != -1) {
-            GlobalScope.launch {
+            GlobalScope.launch(handleExceptionContext) {
                 if (isNetworkConnected(this@RecipeActivity) && isOnline(timeout!!)) {
                     loadRecipe()
                 } else {
-                    recipeNestedScrollView?.visibility = View.GONE
-                    noConnectionLinearLayout?.visibility = View.VISIBLE
+                    withContext(Dispatchers.Main) {
+                        recipeNestedScrollView?.visibility = View.GONE
+                        noConnectionLinearLayout?.visibility = View.VISIBLE
+                    }
                 }
             }
         }
@@ -161,7 +171,7 @@ class RecipeActivity : AppCompatActivity() {
             .create()
 
         retryButton?.setOnClickListener {
-            GlobalScope.launch {
+            GlobalScope.launch(handleExceptionContext) {
                 withContext(Dispatchers.Main) { retryButton?.isEnabled = false }
 
                 if (isNetworkConnected(this@RecipeActivity) && isOnline(timeout!!)) {
@@ -171,8 +181,10 @@ class RecipeActivity : AppCompatActivity() {
                     }
                     loadRecipe()
                 } else {
-                    recipeNestedScrollView?.visibility = View.GONE
-                    noConnectionLinearLayout?.visibility = View.VISIBLE
+                    withContext(Dispatchers.Main) {
+                        recipeNestedScrollView?.visibility = View.GONE
+                        noConnectionLinearLayout?.visibility = View.VISIBLE
+                    }
                 }
             }.invokeOnCompletion {
                 GlobalScope.launch(Dispatchers.Main) { retryButton?.isEnabled = true }
